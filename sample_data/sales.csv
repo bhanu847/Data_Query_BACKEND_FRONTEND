@@ -1,0 +1,11 @@
+date,region,product,units,price,revenue
+2025-01-05,West,Widget A,120,9.99,1198.80
+2025-01-18,East,Widget B,80,19.99,1599.20
+2025-02-03,West,Widget A,150,9.99,1498.50
+2025-02-21,North,Widget C,60,29.99,1799.40
+2025-03-09,East,Widget B,95,19.99,1899.05
+2025-03-25,South,Widget A,200,9.99,1998.00
+2025-04-12,West,Widget C,70,29.99,2099.30
+2025-04-28,North,Widget B,110,19.99,2198.90
+2025-05-15,East,Widget A,180,9.99,1798.20
+2025-05-30,South,Widget C,90,29.99,2699.10

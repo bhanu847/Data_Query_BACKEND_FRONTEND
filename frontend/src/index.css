@@ -1,0 +1,14 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root { color-scheme: light; }
+body { @apply bg-white text-ink font-sans antialiased; }
+
+/* Signature: subtle grid texture used only on the hero */
+.hero-grid {
+  background-image:
+    linear-gradient(to right, rgba(37,99,235,.06) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(37,99,235,.06) 1px, transparent 1px);
+  background-size: 28px 28px;
+}
