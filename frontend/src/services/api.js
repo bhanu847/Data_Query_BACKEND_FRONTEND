@@ -129,6 +129,34 @@ export const askXML = (source_id, question) =>
 export const generateDashboard = (source_id) =>
   api.post("/dashboard/generate", { source_id }).then((r) => r.data);
 
+// ---------- Dashboard Builder ----------
+export const getSourceColumns = (sourceId) =>
+  api.get(`/dashboard/columns/${sourceId}`).then((r) => r.data);
+
+export const getChartData = (params) =>
+  api.post("/dashboard/chart-data", params).then((r) => r.data);
+
+export const getKpiData = (params) =>
+  api.post("/dashboard/kpi-data", params).then((r) => r.data);
+
+export const getFilterValues = (sourceId, column) =>
+  api.get(`/dashboard/filter-values/${sourceId}/${encodeURIComponent(column)}`).then((r) => r.data);
+
+export const saveDashboard = (params) =>
+  api.post("/dashboard/save", params).then((r) => r.data);
+
+export const listDashboards = () =>
+  api.get("/dashboard/list").then((r) => r.data);
+
+export const getDashboard = (dashboardId) =>
+  api.get(`/dashboard/${dashboardId}`).then((r) => r.data);
+
+export const updateDashboard = (dashboardId, params) =>
+  api.put(`/dashboard/${dashboardId}`, params).then((r) => r.data);
+
+export const deleteDashboard = (dashboardId) =>
+  api.delete(`/dashboard/${dashboardId}`).then((r) => r.data);
+
 export const getHistory = () => api.get("/history").then((r) => r.data);
 
 export const deleteHistoryItem = (itemId) =>

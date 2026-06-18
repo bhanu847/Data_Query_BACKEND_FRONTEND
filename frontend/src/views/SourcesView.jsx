@@ -32,8 +32,8 @@ const TOOLS = [
   {
     key: "dashboard",
     icon: "AI",
-    title: "AI Dashboard Generator",
-    description: "Turn any dataset into a beautiful dashboard automatically.",
+    title: "Dashboard Builder",
+    description: "Build custom dashboards with drag-and-drop charts, KPIs, and templates.",
     color: "bg-violet-50 text-violet-700",
   },
   {

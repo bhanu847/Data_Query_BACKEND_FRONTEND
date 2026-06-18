@@ -124,6 +124,70 @@ class DashboardResponse(BaseModel):
     insights: list[str]
 
 
+class ColumnsResponse(BaseModel):
+    columns: list[str]
+    dtypes: dict[str, str]
+    sample: list[dict[str, Any]]
+    row_count: int
+
+
+class ChartDataRequest(BaseModel):
+    source_id: int
+    chart_type: str
+    x_column: Optional[str] = None
+    y_column: Optional[str] = None
+    aggregation: str = "sum"
+    sort_order: Optional[str] = None
+    limit: Optional[int] = None
+    filters: Optional[dict[str, Any]] = None
+
+
+class ChartDataResponse(BaseModel):
+    chart_type: str
+    title: str
+    x: Optional[str] = None
+    y: Optional[str] = None
+    data: list[dict[str, Any]]
+
+
+class KpiDataRequest(BaseModel):
+    source_id: int
+    column: str
+    aggregation: str = "sum"
+    filters: Optional[dict[str, Any]] = None
+
+
+class KpiDataResponse(BaseModel):
+    label: str
+    value: str
+    aggregation: str
+
+
+class SaveDashboardRequest(BaseModel):
+    source_id: int
+    name: str
+    config: dict[str, Any]
+    template: Optional[str] = None
+
+
+class UpdateDashboardRequest(BaseModel):
+    name: Optional[str] = None
+    config: Optional[dict[str, Any]] = None
+
+
+class DashboardOut(BaseModel):
+    id: int
+    source_id: Optional[int]
+    name: str
+    config: dict[str, Any]
+    template: Optional[str] = None
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
 # ---- History ----
 class HistoryItem(BaseModel):
     id: int

@@ -18,6 +18,7 @@ class User(Base):
 
     sources = relationship("Source", back_populates="owner", cascade="all, delete-orphan")
     queries = relationship("QueryLog", back_populates="user", cascade="all, delete-orphan")
+    dashboards = relationship("Dashboard", back_populates="owner", cascade="all, delete-orphan")
 
 
 class Source(Base):
@@ -47,3 +48,18 @@ class QueryLog(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     user = relationship("User", back_populates="queries")
+
+
+class Dashboard(Base):
+    __tablename__ = "dashboards"
+
+    id = Column(Integer, primary_key=True, index=True)
+    owner_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    source_id = Column(Integer, ForeignKey("sources.id", ondelete="SET NULL"), nullable=True)
+    name = Column(String(255), nullable=False)
+    config = Column(Text, nullable=False)  # JSON: {charts, kpis, filters, layout}
+    template = Column(String(100), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    owner = relationship("User", back_populates="dashboards")
