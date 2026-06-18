@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, useRef } from "react";
+import { useCallback, useMemo } from "react";
 import { ResponsiveGridLayout, useContainerWidth } from "react-grid-layout";
 import AutoChart from "../charts/AutoChart";
 import "react-grid-layout/css/styles.css";
@@ -16,8 +16,7 @@ const KPI_COLORS = {
 export default function DashboardCanvas({
   charts, kpis, layout, onLayoutChange, onEditChart, onDuplicateChart, onDeleteChart, onDeleteKpi,
 }) {
-  const containerRef = useRef(null);
-  const [containerWidth] = useContainerWidth(containerRef);
+  const { containerRef, width: containerWidth } = useContainerWidth();
 
   const kpiItems = useMemo(() =>
     kpis.map((kpi, i) => ({ ...kpi, layoutId: `kpi-${i}` })), [kpis]
