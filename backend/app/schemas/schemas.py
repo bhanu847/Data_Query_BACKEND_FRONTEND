@@ -64,19 +64,50 @@ class ChartSpec(BaseModel):
     data: list[dict[str, Any]]
 
 
-# class QueryResponse(BaseModel):
-#     answer: str
-#     table: list[dict[str, Any]] = []
-#     columns: list[str] = []
-#     charts: list[ChartSpec] = []
-#     sql: Optional[str] = None
 class QueryResponse(BaseModel):
     answer: str
     table: list[dict[str, Any]]
     columns: list[str]
     charts: list[ChartSpec]
     insights: list[str] = []
-    sql: Optional[str]
+    sql: Optional[str] = None
+    confidence: float = 0.5
+
+
+class ExcerptItem(BaseModel):
+    section: int
+    content: str
+
+
+class TextQueryResponse(BaseModel):
+    answer: str
+    excerpts: list[ExcerptItem] = []
+    source_type: str
+    page_count: int = 0
+    total_characters: int = 0
+
+
+class DownloadQueryRequest(BaseModel):
+    source_id: int
+    question: str
+    format: str = "json"  # json | excel | pdf
+
+
+# ---- MongoDB ----
+class MongoDBConnectRequest(BaseModel):
+    host: str
+    port: int = 27017
+    database: str
+    username: Optional[str] = None
+    password: Optional[str] = None
+    auth_source: str = "admin"
+    collection: Optional[str] = None
+
+
+class MongoDBQueryRequest(BaseModel):
+    source_id: int
+    question: str
+    collection: Optional[str] = None
 
 
 # ---- Dashboard ----

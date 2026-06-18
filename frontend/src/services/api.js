@@ -37,7 +37,6 @@ export async function signup({ email, password, full_name }) {
 }
 
 export async function login({ email, password }) {
-  // backend uses OAuth2 form (username = email)
   const form = new URLSearchParams();
   form.append("username", email);
   form.append("password", password);
@@ -66,8 +65,6 @@ function uploadFile(path, file) {
     .post(path, fd, { headers: { "Content-Type": "multipart/form-data" } })
     .then((r) => {
       const data = r.data;
-      // Backend returns { source: { id, ... }, preview, columns }
-      // Normalize so callers can use res.source_id or res.id directly
       const id = data.source?.id ?? data.source_id ?? data.id;
       return { ...data, source_id: id, id };
     });
@@ -79,24 +76,95 @@ export const uploadCSV = (file) => uploadFile("/sources/csv/upload", file);
 export const uploadPDF = (file) => uploadFile("/sources/pdf/upload", file);
 export const uploadSQLite = (file) => uploadFile("/sources/sqlite/upload", file);
 
-// ---------- DB connectors (Phase 2 stubs) ----------
+// ---------- DB connectors ----------
 export const connectPostgres = (cfg) => api.post("/sources/postgres/connect", cfg).then((r) => r.data);
 export const connectMySQL = (cfg) => api.post("/sources/mysql/connect", cfg).then((r) => r.data);
-export const connectMongoDB = (cfg) => api.post("/sources/mongodb/connect", cfg).then((r) => r.data);
 export const connectBigQuery = (cfg) => api.post("/sources/bigquery/connect", cfg).then((r) => r.data);
+
+// ---------- MongoDB ----------
+export const connectMongoDB = (cfg) =>
+  api.post("/sources/mongodb/connect", cfg).then((r) => r.data);
+
+export const listMongoCollections = (sourceId) =>
+  api.get(`/sources/mongodb/collections/${sourceId}`).then((r) => r.data);
+
+export const switchMongoCollection = (sourceId, collection) =>
+  api.post(`/sources/mongodb/switch-collection/${sourceId}?collection=${encodeURIComponent(collection)}`).then((r) => r.data);
+
+export const askMongoDB = (source_id, question, collection) =>
+  api.post("/sources/mongodb/ask", { source_id, question, collection }).then((r) => r.data);
+
+export const refreshMongoDB = (sourceId) =>
+  api.post(`/sources/mongodb/refresh/${sourceId}`).then((r) => r.data);
 
 // ---------- Sources / Query / Dashboard ----------
 export const listSources = () => api.get("/sources").then((r) => r.data);
 
+export const deleteSource = (sourceId) =>
+  api.delete(`/sources/${sourceId}`).then((r) => r.data);
+
+export const deleteAllSources = () =>
+  api.delete("/sources").then((r) => r.data);
+
+// Smart ask — auto-routes by source type (text vs tabular)
 export const askQuestion = (source_id, question) =>
   api.post("/query/ask", { source_id, question }).then((r) => r.data);
+
+// Format-specific ask endpoints
+export const askPDF = (source_id, question) =>
+  api.post("/query/ask/pdf", { source_id, question }).then((r) => r.data);
+
+export const askDocx = (source_id, question) =>
+  api.post("/query/ask/docx", { source_id, question }).then((r) => r.data);
+
+export const askExcel = (source_id, question) =>
+  api.post("/query/ask/excel", { source_id, question }).then((r) => r.data);
+
+export const askJSON = (source_id, question) =>
+  api.post("/query/ask/json", { source_id, question }).then((r) => r.data);
+
+export const askXML = (source_id, question) =>
+  api.post("/query/ask/xml", { source_id, question }).then((r) => r.data);
 
 export const generateDashboard = (source_id) =>
   api.post("/dashboard/generate", { source_id }).then((r) => r.data);
 
 export const getHistory = () => api.get("/history").then((r) => r.data);
 
-// ---------- Exports (download support) ----------
+export const deleteHistoryItem = (itemId) =>
+  api.delete(`/history/${itemId}`).then((r) => r.data);
+
+export const clearHistory = () =>
+  api.delete("/history").then((r) => r.data);
+
+// ---------- Download query results ----------
+async function downloadQueryResult(source_id, question, format, filename) {
+  const res = await api.post(
+    "/query/download",
+    { source_id, question, format },
+    { responseType: "blob" }
+  );
+  const url = URL.createObjectURL(res.data);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.style.display = "none";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+export const downloadAsExcel = (source_id, question) =>
+  downloadQueryResult(source_id, question, "excel", "query_result.xlsx");
+
+export const downloadAsPDF = (source_id, question) =>
+  downloadQueryResult(source_id, question, "pdf", "query_result.pdf");
+
+export const downloadAsJSON = (source_id, question) =>
+  downloadQueryResult(source_id, question, "json", "query_result.json");
+
+// ---------- Exports (full source download) ----------
 async function download(path, source_id, filename) {
   const res = await api.post(path, { source_id }, { responseType: "blob" });
   const url = URL.createObjectURL(res.data);

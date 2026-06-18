@@ -1,4 +1,7 @@
+import io
 import os
+import re
+
 import pandas as pd
 
 
@@ -61,15 +64,44 @@ def _load_csv(file_path: str, sep: str = ",") -> pd.DataFrame:
     return pd.read_csv(file_path, sep=sep, encoding="utf-8", errors="replace")
 
 
+def _is_real_table(header: list[str], rows: list[list[str]]) -> bool:
+    """
+    Validate that an extracted table is real structured data, not garbled
+    text fragments that pdfplumber misidentified as a table.
+    """
+    if len(header) < 2 or len(rows) < 1:
+        return False
+
+    auto_names = sum(1 for h in header if re.match(r'^col_\d+$', h))
+    short_names = sum(1 for h in header if len(str(h).strip()) <= 2)
+    long_names = sum(1 for h in header if len(str(h).strip()) > 30)
+    bad_count = auto_names + short_names + long_names
+
+    # If more than 1/3 of headers are garbage, reject
+    if bad_count / len(header) > 0.35:
+        return False
+
+    # Check that rows have meaningful data in most columns
+    filled_ratios = []
+    for row in rows[:20]:
+        filled = sum(1 for cell in row if str(cell).strip())
+        filled_ratios.append(filled / len(row) if len(row) > 0 else 0)
+    if filled_ratios:
+        avg_filled = sum(filled_ratios) / len(filled_ratios)
+        if avg_filled < 0.3:
+            return False
+
+    return True
+
+
 def _load_pdf(file_path: str) -> pd.DataFrame:
     """
     Extract structured data from a PDF.
 
     Strategy:
-    1. Collect every table pdfplumber finds on each page.
-    2. If at least one table is found, concatenate them and return.
-    3. Otherwise fall back to page-by-page plain text so the AI can
-       still answer questions about the document's content.
+    1. Collect every table pdfplumber finds with default settings.
+    2. Validate that extracted tables are real data (not garbled text).
+    3. If no valid tables, fall back to page text for the text engine.
     """
     import pdfplumber
 
@@ -84,8 +116,11 @@ def _load_pdf(file_path: str) -> pd.DataFrame:
                     continue
                 header = [str(c).strip() if c else f"col_{i}" for i, c in enumerate(tbl[0])]
                 rows = [[str(cell).strip() if cell is not None else "" for cell in row] for row in tbl[1:]]
+
+                if not _is_real_table(header, rows):
+                    continue
+
                 df = pd.DataFrame(rows, columns=header)
-                # drop columns that are entirely empty
                 df = df.loc[:, df.replace("", None).notna().any()]
                 if not df.empty:
                     table_frames.append(df)
@@ -96,18 +131,23 @@ def _load_pdf(file_path: str) -> pd.DataFrame:
 
     if table_frames:
         combined = pd.concat(table_frames, ignore_index=True)
-        # Attempt numeric coercion on columns that look numeric
-        for col in combined.columns:
-            try:
-                combined[col] = pd.to_numeric(combined[col])
-            except (ValueError, TypeError):
-                pass
+        _coerce_numeric(combined)
         return combined
 
+    # No valid tables found — return page text for the text engine
     if page_texts:
         return pd.DataFrame({"page": range(1, len(page_texts) + 1), "content": page_texts})
 
     raise ValueError("Could not extract any content from the PDF")
+
+
+def _coerce_numeric(df: pd.DataFrame) -> None:
+    """In-place coerce string columns to numeric where possible."""
+    for col in df.columns:
+        try:
+            df[col] = pd.to_numeric(df[col])
+        except (ValueError, TypeError):
+            pass
 
 
 def _load_docx(file_path: str) -> pd.DataFrame:
@@ -115,7 +155,7 @@ def _load_docx(file_path: str) -> pd.DataFrame:
     Extract structured data from a Word (.docx) file.
 
     Strategy:
-    1. If the document contains tables, return the first table as a DataFrame.
+    1. If the document contains tables, return all tables concatenated.
     2. Otherwise return every non-empty paragraph as a row.
     """
     from docx import Document
@@ -123,14 +163,23 @@ def _load_docx(file_path: str) -> pd.DataFrame:
     doc = Document(file_path)
 
     if doc.tables:
-        table = doc.tables[0]
-        if table.rows:
+        frames = []
+        for table in doc.tables:
+            if not table.rows:
+                continue
             headers = [cell.text.strip() for cell in table.rows[0].cells]
             rows = [
                 [cell.text.strip() for cell in row.cells]
                 for row in table.rows[1:]
             ]
-            return pd.DataFrame(rows, columns=headers)
+            if _is_real_table(headers, rows):
+                df = pd.DataFrame(rows, columns=headers)
+                if not df.empty:
+                    frames.append(df)
+        if frames:
+            combined = pd.concat(frames, ignore_index=True)
+            _coerce_numeric(combined)
+            return combined
 
     paragraphs = [p.text.strip() for p in doc.paragraphs if p.text.strip()]
     if not paragraphs:

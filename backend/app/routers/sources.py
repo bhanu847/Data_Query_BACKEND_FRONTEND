@@ -205,3 +205,51 @@ def list_sources(db: Session = Depends(get_db), user: User = Depends(get_current
         )
         for s in rows
     ]
+
+
+# --------------------------------------------------------------------------- #
+#  Delete a single source
+# --------------------------------------------------------------------------- #
+
+@router.delete("/{source_id}")
+def delete_source(
+    source_id: int,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    source = db.query(Source).filter(Source.id == source_id, Source.owner_id == user.id).first()
+    if not source:
+        raise HTTPException(status_code=404, detail="Source not found")
+
+    if source.file_path:
+        try:
+            os.remove(source.file_path)
+        except OSError:
+            pass
+
+    store.drop_frame(source.id)
+    db.delete(source)
+    db.commit()
+    return {"detail": "Source deleted"}
+
+
+# --------------------------------------------------------------------------- #
+#  Delete all sources for the current user
+# --------------------------------------------------------------------------- #
+
+@router.delete("")
+def delete_all_sources(
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    sources = db.query(Source).filter(Source.owner_id == user.id).all()
+    for source in sources:
+        if source.file_path:
+            try:
+                os.remove(source.file_path)
+            except OSError:
+                pass
+        store.drop_frame(source.id)
+        db.delete(source)
+    db.commit()
+    return {"detail": f"Deleted {len(sources)} sources"}

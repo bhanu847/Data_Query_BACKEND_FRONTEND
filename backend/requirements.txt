@@ -18,3 +18,4 @@ lxml>=5.0.0
 # on a Python version with compatible wheels.
 pyarrow>=17.0.0; python_version < "3.13"
 psycopg2-binary>=2.9.9; python_version < "3.13"
+pymongo>=4.7.0

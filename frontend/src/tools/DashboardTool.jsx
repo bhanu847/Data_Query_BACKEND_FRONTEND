@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
-import { listSources, generateDashboard } from "../services/api";
-//import DashboardView from "../views/DashboardView";
+import { listSources, generateDashboard, deleteSource } from "../services/api";
 import DashboardView from "../pages/DashboardView";
 
 export default function DashboardTool({ onBack }) {
@@ -11,12 +10,15 @@ export default function DashboardTool({ onBack }) {
   const [dashboard, setDashboard] = useState(null);
   const [error, setError] = useState("");
 
-  useEffect(() => {
+  const loadSources = () => {
+    setLoadingSources(true);
     listSources()
       .then(setSources)
       .catch(() => setSources([]))
       .finally(() => setLoadingSources(false));
-  }, []);
+  };
+
+  useEffect(() => { loadSources(); }, []);
 
   const generate = async () => {
     if (!selectedSource) return;
@@ -30,6 +32,17 @@ export default function DashboardTool({ onBack }) {
       setError(e.message);
     } finally {
       setGenerating(false);
+    }
+  };
+
+  const handleDeleteSource = async (id, e) => {
+    e.stopPropagation();
+    try {
+      await deleteSource(id);
+      setSources((prev) => prev.filter((s) => s.id !== id));
+      if (selectedSource === id) setSelectedSource(null);
+    } catch (err) {
+      setError(err.message);
     }
   };
 
@@ -60,23 +73,32 @@ export default function DashboardTool({ onBack }) {
         ) : sources.length === 0 ? (
           <div className="rounded-xl bg-slate-50 border border-slate-200 p-5 text-center">
             <p className="text-sm text-slate-500">No data sources yet.</p>
-            <p className="mt-1 text-xs text-slate-400">Upload an Excel or CSV file first using "Chat with Excel".</p>
+            <p className="mt-1 text-xs text-slate-400">Upload an Excel or CSV file first using "Chat with Data".</p>
           </div>
         ) : (
           <div className="grid gap-2">
             {sources.map((src) => (
-              <button
+              <div
                 key={src.id}
                 onClick={() => setSelectedSource(src.id)}
-                className={`flex items-center gap-3 rounded-xl border px-4 py-3 text-left text-sm transition-colors ${
+                className={`group flex items-center gap-3 rounded-xl border px-4 py-3 text-sm cursor-pointer transition-colors ${
                   selectedSource === src.id
                     ? "border-brand bg-brand-soft text-brand"
                     : "border-slate-200 hover:bg-slate-50 text-slate-700"
                 }`}
               >
-                <span className="font-medium">{src.name || src.filename || `Source ${src.id}`}</span>
-                <span className="ml-auto text-xs text-slate-400">{src.type || "file"}</span>
-              </button>
+                <span className="font-medium flex-1 truncate">{src.name || `Source ${src.id}`}</span>
+                <span className="text-xs text-slate-400">{src.kind || "file"}</span>
+                <button
+                  onClick={(e) => handleDeleteSource(src.id, e)}
+                  className="shrink-0 rounded p-1 text-slate-300 opacity-0 group-hover:opacity-100 hover:bg-red-50 hover:text-red-500 transition-all"
+                  title="Delete source"
+                >
+                  <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
             ))}
           </div>
         )}

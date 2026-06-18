@@ -23,6 +23,13 @@ const TOOLS = [
     color: "bg-sky-50 text-sky-700",
   },
   {
+    key: "mongodb",
+    icon: "🍃",
+    title: "MongoDB Analytics",
+    description: "Connect to MongoDB and query your collections with AI.",
+    color: "bg-green-50 text-green-700",
+  },
+  {
     key: "dashboard",
     icon: "AI",
     title: "AI Dashboard Generator",

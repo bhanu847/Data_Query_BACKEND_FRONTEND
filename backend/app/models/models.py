@@ -26,10 +26,11 @@ class Source(Base):
     id = Column(Integer, primary_key=True, index=True)
     owner_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     name = Column(String(255), nullable=False)
-    kind = Column(String(50), nullable=False)  # excel | csv | pdf | sql | api ...
+    kind = Column(String(50), nullable=False)  # excel | csv | pdf | sql | api | mongodb ...
     file_path = Column(String(512), nullable=True)
     row_count = Column(Integer, nullable=True)
     columns = Column(Text, nullable=True)  # JSON-encoded list of column names
+    connection_info = Column(Text, nullable=True)  # JSON-encoded connection config for DB sources
     created_at = Column(DateTime, default=datetime.utcnow)
 
     owner = relationship("User", back_populates="sources")
@@ -40,7 +41,7 @@ class QueryLog(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    source_id = Column(Integer, ForeignKey("sources.id"), nullable=True)
+    source_id = Column(Integer, ForeignKey("sources.id", ondelete="SET NULL"), nullable=True)
     question = Column(Text, nullable=False)
     answer = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
