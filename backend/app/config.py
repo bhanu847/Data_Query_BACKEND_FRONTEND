@@ -24,10 +24,13 @@ class Settings:
     UPLOAD_DIR: str = os.getenv("UPLOAD_DIR", "./uploads")
     MAX_UPLOAD_MB: int = int(os.getenv("MAX_UPLOAD_MB", "50"))
 
-    # CORS
-    CORS_ORIGINS: list[str] = os.getenv(
-        "CORS_ORIGINS", "http://localhost:5174,http://127.0.0.1:5174"
-    ).split(",")
+    # CORS — set CORS_ORIGINS env var to your Vercel domain in production
+    CORS_ORIGINS: list[str] = [
+        o.strip() for o in os.getenv(
+            "CORS_ORIGINS",
+            "http://localhost:5173,http://127.0.0.1:5173,http://localhost:5174,http://127.0.0.1:5174"
+        ).split(",") if o.strip()
+    ]
 
 
 @lru_cache

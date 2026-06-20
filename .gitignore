@@ -1,11 +1,31 @@
 # Python
 __pycache__/
 *.pyc
+*.pyo
 .venv/
+venv/
+env/
 *.db
 uploads/
 .env
+*.egg-info/
 
 # Node
 node_modules/
 dist/
+.vercel/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Build
+*.log

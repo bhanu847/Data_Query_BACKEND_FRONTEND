@@ -5,17 +5,16 @@ pydantic[email]>=2.9.2
 python-jose[cryptography]>=3.3.0
 passlib[bcrypt]>=1.7.4
 python-multipart>=0.0.12
-pandas>=2.3.0
-numpy>=2.3.0
+python-dotenv>=1.0.0
+pandas>=2.2.0
+numpy>=2.0.0
 openpyxl>=3.1.5
 reportlab>=4.2.2
-openai>=1.51.0
+matplotlib>=3.9.0
 pdfplumber>=0.11.0
 python-docx>=1.1.0
 lxml>=5.0.0
-
-# Optional native drivers. Install these manually if you need Parquet or Postgres
-# on a Python version with compatible wheels.
-pyarrow>=17.0.0; python_version < "3.13"
-psycopg2-binary>=2.9.9; python_version < "3.13"
+openai>=1.51.0
+psycopg2-binary>=2.9.9
 pymongo>=4.7.0
+gunicorn>=22.0.0
