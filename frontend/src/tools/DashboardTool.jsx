@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import {
   listSources, deleteSource, generateDashboard, getSourceColumns,
-  getChartData, getKpiData, saveDashboard, listDashboards, getDashboard, updateDashboard, deleteDashboard,
+  getChartData, getKpiData, saveDashboard, listDashboards, updateDashboard, deleteDashboard,
 } from "../services/api";
 import DashboardCanvas from "../components/DashboardCanvas";
 import AddChartModal from "../components/AddChartModal";

@@ -2,7 +2,6 @@ import { useState, useRef } from "react";
 import {
   connectMongoDB,
   askMongoDB,
-  listMongoCollections,
   switchMongoCollection,
   refreshMongoDB,
   downloadAsExcel,

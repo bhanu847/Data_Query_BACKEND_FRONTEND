@@ -4,7 +4,6 @@ import {
   profileDataset,
   applyCleanFixes,
   downloadCleanedFile,
-  exportCSV,
 } from "../services/api";
 import {
   ResponsiveContainer,
