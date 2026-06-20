@@ -13,8 +13,9 @@ class Settings:
     ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "10080"))  # 7 days
 
     # Database. Defaults to local SQLite so the app runs with zero setup.
-    # For production use Postgres, e.g. postgresql+psycopg2://user:pass@host:5432/db
-    DATABASE_URL: str = os.getenv("DATABASE_URL", "sqlite:///./dataquery.db")
+    # Render gives postgres:// but SQLAlchemy requires postgresql://
+    _raw_db = os.getenv("DATABASE_URL", "sqlite:///./dataquery.db")
+    DATABASE_URL: str = _raw_db.replace("postgres://", "postgresql://", 1) if _raw_db.startswith("postgres://") else _raw_db
 
     # AI. If no key is set, the query/dashboard engines fall back to pandas-only logic.
     OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "")
