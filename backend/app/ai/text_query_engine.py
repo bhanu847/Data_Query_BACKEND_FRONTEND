@@ -105,9 +105,8 @@ def run_text_query(file_path: str, kind: str, question: str) -> dict[str, Any]:
                     "role": "system",
                     "content": (
                         "You are an expert document analyst. Answer the user's question based ONLY on the "
-                        "provided document content. Be thorough and specific. If the document doesn't contain "
-                        "enough information to answer, say so clearly. Always reference which page/section "
-                        "the information comes from."
+                        "provided document content. Be concise and direct. Give the answer first, then "
+                        "supporting details if needed. Do NOT dump raw text. Do NOT repeat the question."
                     ),
                 },
                 {
@@ -123,27 +122,14 @@ def run_text_query(file_path: str, kind: str, question: str) -> dict[str, Any]:
         )
         answer = (response.choices[0].message.content or "").strip()
     else:
-        if relevant:
-            excerpts_text = "\n\n".join(
-                f"--- Section {p.get('page', p.get('paragraph', p.get('line', '?')))} ---\n{p['content'][:500]}"
-                for p in relevant
-            )
-            answer = (
-                f"Here are the most relevant sections from your document:\n\n{excerpts_text}\n\n"
-                f"(For AI-powered answers, configure your OpenAI API key.)"
-            )
-        else:
-            answer = (
-                f"The document has {len(pages)} pages/sections but I couldn't find content "
-                f"matching your question. Try rephrasing or ask about specific topics in the document."
-            )
+        answer = _smart_extract(question, relevant, pages)
 
     excerpts = [
         {
             "section": p.get("page", p.get("paragraph", p.get("line", 0))),
             "content": p["content"][:300],
         }
-        for p in relevant
+        for p in relevant[:3]
     ]
 
     return {
@@ -153,3 +139,60 @@ def run_text_query(file_path: str, kind: str, question: str) -> dict[str, Any]:
         "page_count": len(pages),
         "total_characters": len(full_text),
     }
+
+
+def _smart_extract(question: str, relevant: list[dict], all_pages: list[dict]) -> str:
+    q_lower = question.lower().strip().rstrip("?").strip()
+
+    if not relevant:
+        return (
+            f"The document has {len(all_pages)} pages but no content matched your question. "
+            "Try asking about specific topics mentioned in the document."
+        )
+
+    best = relevant[0]["content"]
+
+    # Name extraction
+    if any(w in q_lower for w in ("name", "who is", "whose", "author", "candidate", "applicant")):
+        for line in best.split("\n"):
+            line = line.strip()
+            if len(line) > 2 and not line.startswith(("#", "-", "*", "•")) and "@" not in line:
+                words = line.split()
+                if 2 <= len(words) <= 5 and all(w[0].isupper() for w in words if w.isalpha()):
+                    return line
+        parts = best.split("\n")
+        if parts:
+            return parts[0].strip()
+
+    # Contact info
+    if any(w in q_lower for w in ("email", "phone", "contact", "number", "mobile")):
+        for line in best.split("\n"):
+            line = line.strip()
+            if "@" in line and "email" in q_lower.lower():
+                emails = re.findall(r'[\w.+-]+@[\w-]+\.[\w.-]+', line)
+                if emails:
+                    return emails[0]
+            if any(w in q_lower for w in ("phone", "number", "mobile", "contact")):
+                phones = re.findall(r'[\+]?[\d][\d\s\-\(\)]{6,}', line)
+                if phones:
+                    return phones[0].strip()
+
+    # Summary / overview
+    if any(w in q_lower for w in ("summary", "summarize", "overview", "about", "describe", "tell me about")):
+        all_text = "\n\n".join(p["content"] for p in relevant[:3])
+        sentences = re.split(r'[.!?\n]', all_text)
+        clean = [s.strip() for s in sentences if len(s.strip()) > 25 and "@" not in s and "|" not in s]
+        return ". ".join(clean[:5]) + "." if clean else best[:500]
+
+    # Skills / experience / education
+    if any(w in q_lower for w in ("skill", "experience", "education", "qualification", "technology", "tech stack")):
+        all_text = "\n\n".join(p["content"] for p in relevant[:3])
+        lines = [l.strip() for l in all_text.split("\n") if l.strip() and len(l.strip()) > 5 and "@" not in l]
+        return "\n".join(lines[:12])
+
+    # Default: return the most relevant content, cleaned up
+    sentences = re.split(r'[.!?\n]', best)
+    clean = [s.strip() for s in sentences if len(s.strip()) > 15]
+    if clean:
+        return ". ".join(clean[:5]) + "."
+    return best[:600]

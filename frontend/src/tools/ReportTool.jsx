@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import {
   listSources,
+  uploadAny,
+  deleteSource,
   getSourceColumns,
   getChartData,
   getKpiData,
@@ -115,6 +117,10 @@ export default function ReportTool({ onBack }) {
   const [activeSource, setActiveSource] = useState(null);
   const [columns, setColumns] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState("");
+  const [deleting, setDeleting] = useState(null);
+  const fileRef = useRef();
 
   // kpi
   const [selectedKpis, setSelectedKpis] = useState([]);
@@ -136,19 +142,22 @@ export default function ReportTool({ onBack }) {
   const [previewUrl, setPreviewUrl] = useState(null);
   const [pdfBlob, setPdfBlob] = useState(null);
 
-  /* ---- bootstrap: get first available source ---- */
-  useEffect(() => {
+  const refreshSources = useCallback(() => {
+    setLoading(true);
     listSources()
       .then((srcs) => {
         setSources(srcs);
-        if (srcs.length) setActiveSource(srcs[0]);
+        if (!activeSource && srcs.length) setActiveSource(srcs[0]);
       })
       .catch(() => {})
       .finally(() => setLoading(false));
-  }, []);
+  }, [activeSource]);
+
+  useEffect(() => { refreshSources(); }, []);
 
   useEffect(() => {
     if (!activeSource) return;
+    setColumns(null);
     getSourceColumns(activeSource.id)
       .then((meta) => {
         setColumns(meta);
@@ -157,6 +166,42 @@ export default function ReportTool({ onBack }) {
       })
       .catch(() => {});
   }, [activeSource]);
+
+  const handleUpload = async (f) => {
+    if (!f) return;
+    setUploading(true);
+    setUploadError("");
+    try {
+      const res = await uploadAny(f);
+      const id = res.source_id || res.id;
+      const newSrc = { id, name: f.name, kind: f.name.split(".").pop(), row_count: res.source?.row_count };
+      setSources((prev) => [newSrc, ...prev]);
+      setActiveSource(newSrc);
+      setStep(0);
+    } catch (e) {
+      setUploadError(e.message);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleDeleteSource = async (srcId) => {
+    if (!window.confirm("Delete this dataset? This cannot be undone.")) return;
+    setDeleting(srcId);
+    try {
+      await deleteSource(srcId);
+      setSources((prev) => prev.filter((s) => s.id !== srcId));
+      if (activeSource?.id === srcId) {
+        const remaining = sources.filter((s) => s.id !== srcId);
+        setActiveSource(remaining.length ? remaining[0] : null);
+        setColumns(null);
+        setStep(0);
+      }
+    } catch { /* ignore */ }
+    finally { setDeleting(null); }
+  };
+
+  const handleDrop = (e) => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) handleUpload(f); };
 
   useEffect(() => {
     return () => { if (previewUrl) URL.revokeObjectURL(previewUrl); };
@@ -368,21 +413,6 @@ export default function ReportTool({ onBack }) {
     );
   }
 
-  if (!sources.length) {
-    return (
-      <div className="space-y-5 animate-fade-in">
-        <Header onBack={onBack} />
-        <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-border bg-surface-1 py-20 text-center">
-          <div className="w-16 h-16 rounded-2xl bg-accent-indigo/10 border border-accent-indigo/30 flex items-center justify-center font-mono text-lg font-bold text-[#A5B4FC] mb-5">
-            AI
-          </div>
-          <p className="font-semibold text-ink text-lg">No data available</p>
-          <p className="mt-2 text-sm text-muted max-w-sm">Upload a dataset first to start generating AI-powered business reports.</p>
-        </div>
-      </div>
-    );
-  }
-
   /* ═══════════════════════════════════════════════════════════════════ */
   /*   MAIN RENDER                                                     */
   /* ═══════════════════════════════════════════════════════════════════ */
@@ -391,6 +421,97 @@ export default function ReportTool({ onBack }) {
     <div className="space-y-6 animate-fade-in">
       <Header onBack={onBack} />
 
+      {/* ──── Source Selection & Upload Panel ──── */}
+      <div className="rounded-2xl border border-border bg-surface-1 p-5 space-y-4">
+        <div className="flex items-center justify-between">
+          <p className="text-sm font-semibold text-ink">Dataset</p>
+          <button
+            onClick={() => fileRef.current?.click()}
+            disabled={uploading}
+            className="inline-flex items-center gap-1.5 rounded-xl bg-brand/10 border border-brand/25 px-3.5 py-2 text-xs font-semibold text-brand hover:bg-brand/20 disabled:opacity-50 transition-colors"
+          >
+            {uploading ? (
+              <><span className="h-3 w-3 animate-spin rounded-full border-2 border-brand/30 border-t-brand" /> Uploading…</>
+            ) : (
+              <>&#xFF0B; Upload New File</>
+            )}
+          </button>
+          <input ref={fileRef} type="file" accept=".csv,.xlsx,.xls,.json,.jsonl,.tsv,.parquet,.xml" className="hidden"
+            onChange={(e) => { handleUpload(e.target.files[0]); e.target.value = ""; }} />
+        </div>
+
+        {uploadError && (
+          <p className="text-xs text-accent-rose">{uploadError}</p>
+        )}
+
+        {loading ? (
+          <div className="space-y-2">{[1, 2].map((i) => <div key={i} className="h-11 rounded-xl bg-surface-2 animate-pulse" />)}</div>
+        ) : sources.length === 0 ? (
+          <div
+            role="button" tabIndex={0}
+            onDrop={handleDrop} onDragOver={(e) => e.preventDefault()}
+            onClick={() => fileRef.current?.click()}
+            onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") fileRef.current?.click(); }}
+            className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-border-2 py-12 cursor-pointer hover:border-brand hover:bg-brand/[0.03] transition-colors"
+          >
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-accent-indigo/10 border border-accent-indigo/30 font-mono text-sm font-bold text-[#A5B4FC] mb-3">RPT</div>
+            <p className="font-medium text-ink">Drop a file here to get started</p>
+            <p className="text-xs text-muted mt-1">.csv, .xlsx, .json, .parquet, .xml</p>
+          </div>
+        ) : (
+          <div className="grid gap-1.5 max-h-[200px] overflow-y-auto pr-1">
+            {sources.map((src) => (
+              <div
+                key={src.id}
+                className={`group flex items-center gap-3 rounded-xl border px-3.5 py-2.5 text-left transition-all cursor-pointer ${
+                  activeSource?.id === src.id
+                    ? "border-brand/40 bg-brand/[0.06] ring-1 ring-brand/20"
+                    : "border-border hover:bg-surface-2"
+                }`}
+                onClick={() => { setActiveSource(src); setStep(0); setPreviewData(null); }}
+              >
+                <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg font-mono text-[9px] font-bold ${
+                  activeSource?.id === src.id
+                    ? "bg-brand/15 text-brand border border-brand/30"
+                    : "bg-surface-3 text-muted border border-border"
+                }`}>
+                  {(src.kind || "F").slice(0, 3).toUpperCase()}
+                </span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[13px] font-medium text-ink truncate">{src.name || `Source ${src.id}`}</p>
+                  <p className="text-[11px] text-muted-2">{src.row_count ? `${src.row_count.toLocaleString()} rows` : src.kind || "file"}</p>
+                </div>
+                {activeSource?.id === src.id && (
+                  <span className="shrink-0 h-2 w-2 rounded-full bg-brand shadow-[0_0_6px_#22D3EE]" />
+                )}
+                <button
+                  aria-label={`Delete ${src.name}`}
+                  onClick={(e) => { e.stopPropagation(); handleDeleteSource(src.id); }}
+                  disabled={deleting === src.id}
+                  className="shrink-0 rounded-lg p-1.5 text-muted-2 opacity-0 group-hover:opacity-100 hover:bg-accent-rose/10 hover:text-accent-rose disabled:opacity-50 transition-all"
+                >
+                  {deleting === src.id ? (
+                    <span className="block h-3.5 w-3.5 animate-spin rounded-full border-2 border-accent-rose/30 border-t-accent-rose" />
+                  ) : (
+                    <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                  )}
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* ──── Main flow only if a source is selected ──── */}
+      {!activeSource ? null : !columns ? (
+        <div className="flex items-center justify-center py-12">
+          <div className="h-6 w-6 animate-spin rounded-full border-2 border-brand/30 border-t-brand" />
+          <span className="ml-3 text-sm text-muted">Loading columns…</span>
+        </div>
+      ) : (
+      <>
       {/* Stepper */}
       <div className="flex items-center gap-1">
         {STEP_LABELS.map((label, i) => (
@@ -851,6 +972,8 @@ export default function ReportTool({ onBack }) {
           <div className="w-[100px]" />
         )}
       </div>
+      </>
+      )}
     </div>
   );
 }

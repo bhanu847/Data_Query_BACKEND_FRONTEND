@@ -97,7 +97,7 @@ export default function Workspace() {
       </div>
 
       <div className="relative z-10 flex h-screen flex-col overflow-hidden">
-        <Navbar onUploadFile={handleUploadFile} />
+        <Navbar onUploadFile={handleUploadFile} onOpenTool={handleOpenTool} onSelectSection={handleSelectSection} />
         <div className="flex flex-1 overflow-hidden">
           <Sidebar
             active={currentSection}

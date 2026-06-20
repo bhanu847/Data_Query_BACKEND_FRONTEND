@@ -289,15 +289,19 @@ function ChatBubble({ msg, sourceId }) {
         <div className="max-w-[90%] rounded-2xl bg-surface-1 border border-border p-4 space-y-3">
           <div className="text-sm text-ink leading-relaxed whitespace-pre-wrap">{msg.answer}</div>
           {msg.excerpts?.length > 0 && (
-            <div className="space-y-2">
-              <h4 className="text-xs font-semibold text-muted uppercase tracking-wide">Source References</h4>
-              {msg.excerpts.map((exc, i) => (
-                <div key={i} className="rounded-lg bg-surface-1 border border-border p-3">
-                  <span className="text-xs font-medium text-brand">Section {exc.section}</span>
-                  <p className="text-xs text-muted mt-1 line-clamp-3">{exc.content}</p>
-                </div>
-              ))}
-            </div>
+            <details className="group">
+              <summary className="text-xs font-semibold text-muted uppercase tracking-wide cursor-pointer hover:text-ink">
+                Source References ({msg.excerpts.length})
+              </summary>
+              <div className="mt-2 space-y-2">
+                {msg.excerpts.map((exc, i) => (
+                  <div key={i} className="rounded-lg bg-surface-2 border border-border p-3">
+                    <span className="text-xs font-medium text-brand">Page {exc.section}</span>
+                    <p className="text-xs text-muted mt-1 line-clamp-3">{exc.content}</p>
+                  </div>
+                ))}
+              </div>
+            </details>
           )}
           {msg.question && <DownloadButtons sourceId={sourceId} question={msg.question} />}
         </div>
