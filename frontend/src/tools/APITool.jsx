@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { askQuestion, uploadAny } from "../services/api";
 
 const AUTH_TYPES = ["None", "Bearer Token", "API Key (header)", "Basic Auth"];
 
@@ -14,12 +15,14 @@ export default function APITool({ onBack }) {
   const [question, setQuestion] = useState("");
   const [analysing, setAnalysing] = useState(false);
   const [analysis, setAnalysis] = useState("");
+  const [sourceId, setSourceId] = useState(null);
 
   const fetchAPI = async () => {
     if (!url) return;
     setError("");
     setResponse(null);
     setAnalysis("");
+    setSourceId(null);
     setFetching(true);
     try {
       const headers = {};
@@ -30,6 +33,16 @@ export default function APITool({ onBack }) {
       const res = await fetch(url, { method, headers });
       const json = await res.json();
       setResponse(json);
+
+      // Auto-upload the JSON response as a source for AI analysis
+      const blob = new Blob([JSON.stringify(json, null, 2)], { type: "application/json" });
+      const file = new File([blob], "api_response.json", { type: "application/json" });
+      try {
+        const uploadRes = await uploadAny(file);
+        setSourceId(uploadRes.source_id || uploadRes.id);
+      } catch {
+        // AI analysis won't be available but the response is still shown
+      }
     } catch (e) {
       setError(`Failed to fetch: ${e.message}`);
     } finally {
@@ -38,26 +51,16 @@ export default function APITool({ onBack }) {
   };
 
   const analyseWithAI = async () => {
-    if (!response || !question.trim()) return;
+    if (!question.trim()) return;
     setAnalysing(true);
     setAnalysis("");
     try {
-      const res = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          model: "claude-sonnet-4-6",
-          max_tokens: 1000,
-          messages: [
-            {
-              role: "user",
-              content: `Here is API response data:\n\n${JSON.stringify(response, null, 2)}\n\nUser question: ${question}`,
-            },
-          ],
-        }),
-      });
-      const data = await res.json();
-      setAnalysis(data.content?.[0]?.text || "No response");
+      if (sourceId) {
+        const res = await askQuestion(sourceId, question);
+        setAnalysis(res.answer || "No response from AI.");
+      } else {
+        setAnalysis("Could not analyze: API response was not uploaded as a data source. Try fetching again.");
+      }
     } catch (e) {
       setAnalysis(`Error: ${e.message}`);
     } finally {

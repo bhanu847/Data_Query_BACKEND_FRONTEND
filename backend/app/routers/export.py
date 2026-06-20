@@ -17,6 +17,7 @@ from app.services.exporter import (
     to_pdf_bytes,
 )
 from app.services.report_engine import generate_report_pdf
+from app.services.data_cleaner import profile_dataset, clean_dataset
 
 router = APIRouter(prefix="/export", tags=["export"])
 
@@ -125,4 +126,56 @@ def export_report(
         io.BytesIO(pdf_bytes),
         media_type="application/pdf",
         headers={"Content-Disposition": f'attachment; filename="{name}_report.pdf"'},
+    )
+
+
+# ---------- Data Cleaning ----------
+
+@router.post("/clean/profile")
+def clean_profile(
+    payload: ExportRequest,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    df = _frame(db, payload, user)
+    return profile_dataset(df)
+
+
+class CleanRequest(BaseModel):
+    source_id: int
+    fixes: list[str]
+
+
+@router.post("/clean/apply")
+def clean_apply(
+    payload: CleanRequest,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    df = _frame(db, ExportRequest(source_id=payload.source_id), user)
+    original_rows = len(df)
+    cleaned = clean_dataset(df, payload.fixes)
+    cleaned_preview = cleaned.head(10).fillna("").astype(str).to_dict(orient="records")
+    return {
+        "original_rows": original_rows,
+        "cleaned_rows": len(cleaned),
+        "rows_removed": original_rows - len(cleaned),
+        "columns": list(cleaned.columns),
+        "preview": cleaned_preview,
+    }
+
+
+@router.post("/clean/download")
+def clean_download(
+    payload: CleanRequest,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    df = _frame(db, ExportRequest(source_id=payload.source_id), user)
+    cleaned = clean_dataset(df, payload.fixes)
+    name = _name(db, payload.source_id)
+    return StreamingResponse(
+        io.BytesIO(to_excel_bytes(cleaned)),
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f'attachment; filename="{name}_cleaned.xlsx"'},
     )

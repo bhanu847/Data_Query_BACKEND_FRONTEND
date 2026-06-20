@@ -227,4 +227,20 @@ export function downloadBlob(blob, filename) {
   URL.revokeObjectURL(url);
 }
 
+// ---------- Data Cleaning ----------
+export const profileDataset = (source_id) =>
+  api.post("/export/clean/profile", { source_id }).then((r) => r.data);
+
+export const applyCleanFixes = (source_id, fixes) =>
+  api.post("/export/clean/apply", { source_id, fixes }).then((r) => r.data);
+
+export async function downloadCleanedFile(source_id, fixes) {
+  const res = await api.post(
+    "/export/clean/download",
+    { source_id, fixes },
+    { responseType: "blob" }
+  );
+  downloadBlob(res.data, "cleaned_data.xlsx");
+}
+
 export default api;

@@ -64,6 +64,16 @@ COLUMN_SYNONYMS: dict[str, list[str]] = {
 
 # Business concept patterns: maps question phrases to analysis intent
 INTENT_PATTERNS: list[tuple[str, str, dict[str, Any]]] = [
+    # Show data / sample rows (must be checked before generic patterns)
+    (r"\b(first|show|display|list|view|print|give me|see)\b.*\b(\d+)\s*(rows?|records?|entries|items|lines|data points?)\b", "show_data", {}),
+    (r"\b(\d+)\s*(rows?|records?|entries|items|lines)\b.*\b(first|show|display|data|of)\b", "show_data", {}),
+    (r"\b(show|display|view|print|give me|see|list)\b.{0,12}\b(data|rows?|records?|table|all data|all rows|sample|head)\b", "show_data", {}),
+    (r"\b(first|last|head|tail|sample|preview)\s+(\d+)?\s*(rows?|records?|entries|data)?\b", "show_data", {}),
+    (r"\b(head|tail|sample|preview)\b", "show_data", {}),
+
+    # Unique values
+    (r"\b(unique|distinct|all|list all|different)\b.*\b(values?|categories|types|kinds|options|names?)\b", "unique_values", {}),
+
     # Ranking
     (r"\b(most popular|most common|most frequent|most used)\b", "ranking_count", {"sort": "desc"}),
     (r"\b(least popular|least common|least frequent|least used)\b", "ranking_count", {"sort": "asc"}),
@@ -321,13 +331,16 @@ def _classify_intent(question: str, df: pd.DataFrame) -> dict[str, Any]:
     for pattern, intent_type, params in INTENT_PATTERNS:
         match = re.search(pattern, q_lower)
         if match:
+            # show_data / unique_values are high-priority — once matched, skip weaker patterns
+            if intent["type"] in ("show_data", "unique_values"):
+                continue
             # ranking_count is more specific than ranking_metric — don't let
             # a generic "most" override an already-matched "most popular"
             if intent["type"] == "ranking_count" and intent_type == "ranking_metric":
                 continue
-            if intent["type"] == "unknown" or intent_type in ("ranking_count", "ranking_metric", "top_n", "comparison", "trend"):
+            if intent["type"] == "unknown" or intent_type in ("show_data", "unique_values", "ranking_count", "ranking_metric", "top_n", "comparison", "trend"):
                 intent["type"] = intent_type
-                intent["confidence"] = 0.85
+                intent["confidence"] = 0.85 if intent_type not in ("show_data", "unique_values") else 0.95
                 intent["params"].update(params)
                 if "sort" in params:
                     intent["sort_direction"] = params["sort"]
@@ -693,6 +706,42 @@ def _execute_intent(df: pd.DataFrame, intent: dict) -> dict[str, Any]:
     limit = intent.get("limit") or 10
     direction = intent["sort_direction"] == "desc"
 
+    # -- Show Data (first N rows) --
+    if itype == "show_data":
+        q_lower = intent.get("_question", "").lower()
+        n = 10
+        num_match = re.search(r'\b(\d+)\b', q_lower)
+        if num_match:
+            n = min(int(num_match.group(1)), 200)
+
+        is_last = bool(re.search(r'\b(last|tail|bottom|end)\b', q_lower))
+
+        if is_last:
+            result = df.tail(n)
+            answer = f"Here are the last {len(result):,} rows of your dataset ({len(df):,} total rows, {len(df.columns)} columns)."
+        else:
+            result = df.head(n)
+            answer = f"Here are the first {len(result):,} rows of your dataset ({len(df):,} total rows, {len(df.columns)} columns)."
+
+        intent["confidence"] = 0.95
+        return _build_response(answer, result, intent, df)
+
+    # -- Unique Values --
+    if itype == "unique_values":
+        group_col = intent["group_cols"][0] if intent["group_cols"] else None
+        if not group_col:
+            categorical = _categorical_cols(df)
+            if categorical:
+                group_col = categorical[0]
+        if group_col:
+            vc = df[group_col].value_counts(dropna=False).reset_index()
+            vc.columns = [group_col, "count"]
+            answer = f'Found {len(vc):,} unique values in "{group_col}". Here are all values sorted by frequency:'
+            intent["confidence"] = 0.9
+            chart = _select_chart("ranking_count", group_col, None, vc.head(15))
+            return _build_response(answer, vc, intent, df, chart=chart)
+        return _ambiguous_response(df, intent, "Which column's unique values would you like to see?")
+
     # -- Schema --
     if itype == "schema":
         result = pd.DataFrame({
@@ -711,14 +760,61 @@ def _execute_intent(df: pd.DataFrame, intent: dict) -> dict[str, Any]:
     if itype == "summary":
         numeric = _numeric_cols(df)
         categorical = _categorical_cols(df)
-        parts = [f"Dataset: {len(df):,} rows, {len(df.columns)} columns."]
-        for col in numeric[:5]:
-            parts.append(f"  {col}: sum={_format_number(df[col].sum())}, avg={_format_number(df[col].mean())}, min={_format_number(df[col].min())}, max={_format_number(df[col].max())}")
-        for col in categorical[:3]:
-            top_val = df[col].value_counts().index[0] if not df[col].value_counts().empty else "N/A"
-            parts.append(f"  {col}: {df[col].nunique()} unique values, most common: {top_val}")
-        desc = df.describe(include="all").reset_index().fillna("")
-        return _build_response("\n".join(parts), desc, intent, df)
+        date = _date_cols(df)
+
+        parts = [f"Your dataset contains {len(df):,} records across {len(df.columns)} columns.\n"]
+
+        if numeric:
+            parts.append("Key Metrics:")
+            for col in numeric[:6]:
+                cl = col.lower()
+                if any(w in cl for w in ("id", "index", "key", "code", "zip", "phone")):
+                    continue
+                parts.append(f"  • {col}: Total = {_format_number(df[col].sum())} | Avg = {_format_number(df[col].mean())} | Range: {_format_number(df[col].min())} – {_format_number(df[col].max())}")
+
+        if categorical:
+            parts.append("\nCategories:")
+            for col in categorical[:4]:
+                top_val = df[col].value_counts().index[0] if not df[col].value_counts().empty else "N/A"
+                parts.append(f"  • {col}: {df[col].nunique()} unique values (top: {top_val})")
+
+        if date:
+            for d in date[:1]:
+                parts.append(f"\nTime Range: {df[d].min()} to {df[d].max()}")
+
+        # Build a clean summary table instead of describe()
+        summary_rows = []
+        for col in df.columns:
+            row = {"Column": col, "Type": str(df[col].dtype), "Non-Null": int(df[col].notna().sum()), "Unique": int(df[col].nunique())}
+            if pd.api.types.is_numeric_dtype(df[col]):
+                row["Min"] = _format_number(df[col].min())
+                row["Max"] = _format_number(df[col].max())
+                row["Mean"] = _format_number(df[col].mean())
+            else:
+                top = df[col].value_counts().index[0] if not df[col].value_counts().empty else ""
+                row["Min"] = ""
+                row["Max"] = ""
+                row["Mean"] = str(top)[:30]
+            summary_rows.append(row)
+        summary_df = pd.DataFrame(summary_rows)
+
+        # Auto-generate a chart for the summary
+        chart = None
+        if categorical and numeric:
+            rev_col = None
+            for n in numeric:
+                nl = n.lower()
+                if any(w in nl for w in ("price", "revenue", "sales", "amount", "total", "profit")):
+                    rev_col = n
+                    break
+            if not rev_col:
+                rev_col = next((n for n in numeric if not any(w in n.lower() for w in ("id", "index", "key"))), None)
+            if rev_col:
+                chart = _select_chart("ranking_count", categorical[0], rev_col,
+                                      df.groupby(categorical[0])[rev_col].sum().sort_values(ascending=False).reset_index().head(10))
+
+        intent["confidence"] = 0.8
+        return _build_response("\n".join(parts), summary_df, intent, df, chart=chart)
 
     # -- Count (with optional boolean filter) --
     if itype == "count":

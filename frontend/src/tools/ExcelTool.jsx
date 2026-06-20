@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { uploadAny, askQuestion, downloadAsExcel, downloadAsPDF, downloadAsJSON } from "../services/api";
+import { uploadAny,askExcel, askQuestion, downloadAsExcel, downloadAsPDF, downloadAsJSON } from "../services/api";
 import AutoChart from "../charts/AutoChart";
 
 export default function ExcelTool({ onBack, chatContext }) {
@@ -75,7 +75,7 @@ export default function ExcelTool({ onBack, chatContext }) {
     setMessages((prev) => [...prev, { role: "user", text: q }]);
     setAsking(true);
     try {
-      const res = await askQuestion(sourceId, q);
+      const res = await askExcel(sourceId, q);
 
       // Text-based response (PDF/DOCX via smart endpoint)
       if (res.excerpts !== undefined) {
