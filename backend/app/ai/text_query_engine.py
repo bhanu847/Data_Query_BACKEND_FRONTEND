@@ -184,15 +184,28 @@ def _smart_extract(question: str, relevant: list[dict], all_pages: list[dict]) -
         clean = [s.strip() for s in sentences if len(s.strip()) > 25 and "@" not in s and "|" not in s]
         return ". ".join(clean[:5]) + "." if clean else best[:500]
 
-    # Skills / experience / education
-    if any(w in q_lower for w in ("skill", "experience", "education", "qualification", "technology", "tech stack")):
-        all_text = "\n\n".join(p["content"] for p in relevant[:3])
-        lines = [l.strip() for l in all_text.split("\n") if l.strip() and len(l.strip()) > 5 and "@" not in l]
-        return "\n".join(lines[:12])
+    # Skills / experience / education / projects
+    section_words = [w for w in ("skill", "experience", "education", "qualification", "technology",
+                                  "tech stack", "project", "certification", "work history") if w in q_lower]
+    if section_words:
+        target = section_words[0]
+        best_page = None
+        for p in all_pages:
+            lines = p["content"].split("\n")
+            for line in lines:
+                if target in line.lower() and len(line.strip()) < 60:
+                    best_page = p
+                    break
+            if best_page:
+                break
+        source = best_page["content"] if best_page else "\n\n".join(p["content"] for p in relevant[:3])
+        lines = [l.strip() for l in source.split("\n") if l.strip() and len(l.strip()) > 3 and "@" not in l and "|" not in l]
+        return "\n".join(lines[:15])
 
     # Default: return the most relevant content, cleaned up
-    sentences = re.split(r'[.!?\n]', best)
-    clean = [s.strip() for s in sentences if len(s.strip()) > 15]
+    all_text = "\n\n".join(p["content"] for p in relevant[:2])
+    sentences = re.split(r'[.!?\n]', all_text)
+    clean = [s.strip() for s in sentences if len(s.strip()) > 15 and "@" not in s and "|" not in s]
     if clean:
         return ". ".join(clean[:5]) + "."
     return best[:600]
