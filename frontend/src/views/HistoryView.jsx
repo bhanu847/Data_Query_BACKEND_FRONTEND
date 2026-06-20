@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import { getHistory, deleteHistoryItem, clearHistory } from "../services/api";
+import ConfirmModal from "../components/ConfirmModal";
+import useConfirm from "../hooks/useConfirm";
 
 const KIND_STYLES = {
   excel:   { badge: "CSV", accent: "#34D399", bg: "rgba(52,211,153,0.12)",  border: "rgba(52,211,153,0.3)" },
@@ -15,6 +17,7 @@ const KIND_STYLES = {
 const DEFAULT_STYLE = { badge: "AI", accent: "#22D3EE", bg: "rgba(34,211,238,0.12)", border: "rgba(34,211,238,0.3)" };
 
 export default function HistoryView({ onOpenTool, onOpenChat }) {
+  const { confirm, modalProps } = useConfirm();
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -40,7 +43,8 @@ export default function HistoryView({ onOpenTool, onOpenChat }) {
   };
 
   const handleClearAll = async () => {
-    if (!confirm("Delete all history? This cannot be undone.")) return;
+    const ok = await confirm({ title: "Clear All History", message: "All your query history will be permanently deleted. This action cannot be undone." });
+    if (!ok) return;
     setClearing(true);
     try {
       await clearHistory();
@@ -82,6 +86,7 @@ export default function HistoryView({ onOpenTool, onOpenChat }) {
 
   return (
     <div className="max-w-[1180px] mx-auto animate-fade-in space-y-6">
+      <ConfirmModal {...modalProps} />
       <div className="flex items-center justify-between">
         <div>
           <h1 className="font-display text-[28px] font-bold tracking-tight">History</h1>

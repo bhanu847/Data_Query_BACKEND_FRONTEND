@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { listSources, listDashboards, getHistory, deleteSource } from "../services/api";
 import { useAuth } from "../contexts/AuthContext";
+import ConfirmModal from "../components/ConfirmModal";
+import useConfirm from "../hooks/useConfirm";
 
 /* ═══════════════════════════════════════════════════════════════════
    TOOL DEFINITIONS
@@ -39,6 +41,7 @@ const KIND_BADGE = {
 
 export default function SourcesView({ onOpenTool }) {
   const { user } = useAuth();
+  const { confirm, modalProps } = useConfirm();
   const [stats, setStats] = useState({ sources: 0, dashboards: 0, queries: 0, sourceList: [], dashboardList: [], historyList: [] });
   const [loading, setLoading] = useState(true);
   const [copilotQuery, setCopilotQuery] = useState("");
@@ -64,7 +67,8 @@ export default function SourcesView({ onOpenTool }) {
   const [deleting, setDeleting] = useState(null);
 
   const handleDeleteSource = async (srcId) => {
-    if (!window.confirm("Delete this dataset? This cannot be undone.")) return;
+    const ok = await confirm({ title: "Delete Dataset", message: "This dataset and all its data will be permanently deleted. This action cannot be undone." });
+    if (!ok) return;
     setDeleting(srcId);
     try {
       await deleteSource(srcId);
@@ -89,6 +93,7 @@ export default function SourcesView({ onOpenTool }) {
 
   return (
     <div className="max-w-[1280px] mx-auto animate-fade-in space-y-7">
+      <ConfirmModal {...modalProps} />
 
       {/* ──── Hero + Copilot ──── */}
       <div className="relative rounded-2xl border border-border bg-surface-1 p-6 overflow-hidden">

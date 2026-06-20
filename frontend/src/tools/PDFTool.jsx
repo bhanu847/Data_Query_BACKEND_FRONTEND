@@ -1,8 +1,11 @@
 import { useState, useRef, useEffect } from "react";
 import { uploadPDF, askPDF, listSources, deleteSource, downloadAsExcel, downloadAsPDF, downloadAsJSON } from "../services/api";
 import AutoChart from "../charts/AutoChart";
+import ConfirmModal from "../components/ConfirmModal";
+import useConfirm from "../hooks/useConfirm";
 
 export default function PDFTool({ onBack, chatContext }) {
+  const { confirm, modalProps } = useConfirm();
   const [file, setFile] = useState(null);
   const [sourceId, setSourceId] = useState(null);
   const [uploading, setUploading] = useState(false);
@@ -51,7 +54,8 @@ export default function PDFTool({ onBack, chatContext }) {
 
   const handleDeleteSource = async (srcId, e) => {
     e.stopPropagation();
-    if (!window.confirm("Delete this file? This cannot be undone.")) return;
+    const ok = await confirm({ title: "Delete File", message: "This file and all its data will be permanently deleted. This action cannot be undone." });
+    if (!ok) return;
     setDeleting(srcId);
     try {
       await deleteSource(srcId);
@@ -152,6 +156,7 @@ export default function PDFTool({ onBack, chatContext }) {
 
   return (
     <div className="flex h-full flex-col space-y-4">
+      <ConfirmModal {...modalProps} />
       <div className="flex items-center justify-between">
         <div>
           <button onClick={onBack} className="mb-1 text-sm text-muted hover:text-ink">

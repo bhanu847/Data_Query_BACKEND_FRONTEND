@@ -1,7 +1,10 @@
 import { useState, useEffect } from "react";
 import { listDashboards, deleteDashboard } from "../services/api";
+import ConfirmModal from "../components/ConfirmModal";
+import useConfirm from "../hooks/useConfirm";
 
 export default function DashboardsView({ onOpenTool }) {
+  const { confirm, modalProps } = useConfirm();
   const [dashboards, setDashboards] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -15,7 +18,8 @@ export default function DashboardsView({ onOpenTool }) {
 
   const handleDelete = async (id, e) => {
     e.stopPropagation();
-    if (!window.confirm("Delete this dashboard? This cannot be undone.")) return;
+    const ok = await confirm({ title: "Delete Dashboard", message: "This dashboard and all its charts will be permanently deleted. This action cannot be undone." });
+    if (!ok) return;
     try {
       await deleteDashboard(id);
       setDashboards((prev) => prev.filter((d) => d.id !== id));
@@ -26,6 +30,7 @@ export default function DashboardsView({ onOpenTool }) {
 
   return (
     <div className="max-w-[1180px] mx-auto animate-fade-in space-y-6">
+      <ConfirmModal {...modalProps} />
       <div className="flex items-end justify-between gap-4">
         <div>
           <h1 className="font-display text-[28px] font-bold tracking-tight">Dashboards</h1>

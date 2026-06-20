@@ -12,6 +12,8 @@ import {
   downloadBlob,
 } from "../services/api";
 import AutoChart from "../charts/AutoChart";
+import ConfirmModal from "../components/ConfirmModal";
+import useConfirm from "../hooks/useConfirm";
 
 /* ═══════════════════════════════════════════════════════════════════════
    DATA
@@ -108,6 +110,7 @@ const STEP_LABELS = [
    ═══════════════════════════════════════════════════════════════════════ */
 
 export default function ReportTool({ onBack }) {
+  const { confirm, modalProps } = useConfirm();
   const [step, setStep] = useState(0);
   const [reportType, setReportType] = useState(null);
   const [customPrompt, setCustomPrompt] = useState("");
@@ -186,7 +189,8 @@ export default function ReportTool({ onBack }) {
   };
 
   const handleDeleteSource = async (srcId) => {
-    if (!window.confirm("Delete this dataset? This cannot be undone.")) return;
+    const ok = await confirm({ title: "Delete Dataset", message: "This dataset and all its data will be permanently deleted. This action cannot be undone." });
+    if (!ok) return;
     setDeleting(srcId);
     try {
       await deleteSource(srcId);
@@ -419,6 +423,7 @@ export default function ReportTool({ onBack }) {
 
   return (
     <div className="space-y-6 animate-fade-in">
+      <ConfirmModal {...modalProps} />
       <Header onBack={onBack} />
 
       {/* ──── Source Selection & Upload Panel ──── */}

@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect } from "react";
 import { uploadAny, askQuestion, listSources, deleteSource, downloadAsExcel, downloadAsPDF, downloadAsJSON } from "../services/api";
 import AutoChart from "../charts/AutoChart";
+import ConfirmModal from "../components/ConfirmModal";
+import useConfirm from "../hooks/useConfirm";
 
 const KIND_BADGE = {
   csv: "CSV", excel: "XLS", json: "JSON", pdf: "PDF", tsv: "TSV",
@@ -9,6 +11,7 @@ const KIND_BADGE = {
 };
 
 export default function ExcelTool({ onBack, chatContext }) {
+  const { confirm, modalProps } = useConfirm();
   const [file, setFile] = useState(null);
   const [sourceId, setSourceId] = useState(null);
   const [uploading, setUploading] = useState(false);
@@ -97,7 +100,8 @@ export default function ExcelTool({ onBack, chatContext }) {
 
   const handleDeleteSource = async (srcId, e) => {
     e.stopPropagation();
-    if (!window.confirm("Delete this dataset? This cannot be undone.")) return;
+    const ok = await confirm({ title: "Delete Dataset", message: "This dataset and all its data will be permanently deleted. This action cannot be undone." });
+    if (!ok) return;
     setDeleting(srcId);
     try {
       await deleteSource(srcId);
@@ -154,6 +158,7 @@ export default function ExcelTool({ onBack, chatContext }) {
 
   return (
     <div className="flex h-full flex-col space-y-4">
+      <ConfirmModal {...modalProps} />
       <div className="flex items-center justify-between">
         <div>
           <button onClick={onBack} className="mb-1 text-sm text-muted hover:text-ink">← Back to Tools</button>

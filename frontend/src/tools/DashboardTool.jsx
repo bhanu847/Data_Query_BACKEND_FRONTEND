@@ -5,11 +5,14 @@ import {
 } from "../services/api";
 import DashboardCanvas from "../components/DashboardCanvas";
 import AddChartModal from "../components/AddChartModal";
+import ConfirmModal from "../components/ConfirmModal";
+import useConfirm from "../hooks/useConfirm";
 import KpiBuilder from "../components/KpiBuilder";
 import FilterPanel from "../components/FilterPanel";
 import DashboardTemplates from "../components/DashboardTemplates";
 
 export default function DashboardTool({ onBack }) {
+  const { confirm, modalProps } = useConfirm();
   const [sources, setSources] = useState([]);
   const [loadingSources, setLoadingSources] = useState(true);
   const [selectedSource, setSelectedSource] = useState(null);
@@ -293,7 +296,8 @@ export default function DashboardTool({ onBack }) {
 
   const handleDeleteDashboard = async (id, e) => {
     e.stopPropagation();
-    if (!window.confirm("Delete this dashboard? This cannot be undone.")) return;
+    const ok = await confirm({ title: "Delete Dashboard", message: "This dashboard and all its charts will be permanently deleted. This action cannot be undone." });
+    if (!ok) return;
     try {
       await deleteDashboard(id);
       setSavedDashboards((prev) => prev.filter((d) => d.id !== id));
@@ -319,6 +323,7 @@ export default function DashboardTool({ onBack }) {
   if (mode === "builder") {
     return (
       <div className="space-y-4">
+        <ConfirmModal {...modalProps} />
         {/* Top Bar */}
         <div className="flex items-center justify-between flex-wrap gap-2">
           <div className="flex items-center gap-3">
@@ -423,6 +428,7 @@ export default function DashboardTool({ onBack }) {
   // ---- Source selection mode ----
   return (
     <div className="space-y-5">
+      <ConfirmModal {...modalProps} />
       <div>
         <button onClick={onBack} className="mb-1 text-sm text-muted hover:text-ink">← Back to Tools</button>
         <h2 className="font-display text-xl font-semibold text-ink">Dashboard Builder</h2>
@@ -448,7 +454,7 @@ export default function DashboardTool({ onBack }) {
                 }`}>
                 <span className="font-medium flex-1 truncate">{src.name || `Source ${src.id}`}</span>
                 <span className="text-xs text-muted-2">{src.kind || "file"}</span>
-                <button aria-label={`Delete source ${src.name || src.id}`} onClick={(e) => { e.stopPropagation(); if (!window.confirm("Delete this data source? This cannot be undone.")) return; deleteSource(src.id).then(() => setSources((prev) => prev.filter((s) => s.id !== src.id))); }}
+                <button aria-label={`Delete source ${src.name || src.id}`} onClick={async (e) => { e.stopPropagation(); const ok = await confirm({ title: "Delete Data Source", message: "This data source will be permanently deleted. This action cannot be undone." }); if (!ok) return; deleteSource(src.id).then(() => setSources((prev) => prev.filter((s) => s.id !== src.id))); }}
                   className="shrink-0 rounded p-1 text-muted-2 opacity-0 group-hover:opacity-100 hover:bg-accent-rose/10 hover:text-accent-rose transition-all" title="Delete source">
                   <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
