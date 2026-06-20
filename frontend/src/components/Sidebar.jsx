@@ -1,64 +1,56 @@
-// const SECTIONS = [
-//   { key: "sources", label: "Sources", icon: "SRC" },
-//   { key: "dashboards", label: "Dashboards", icon: "DB" },
-//   { key: "reports", label: "Reports", icon: "RPT" },
-//   { key: "history", label: "History", icon: "HIS" },
-//   { key: "settings", label: "Settings", icon: "SET" },
-// ];
-
-// export default function Sidebar({ active, onSelect }) {
-//   return (
-//     <aside className="hidden w-56 shrink-0 border-r border-slate-200 bg-slate-50/60 p-3 md:block">
-//       <p className="px-3 pb-2 pt-1 text-xs font-semibold uppercase tracking-wide text-slate-400">
-//         Explorer
-//       </p>
-//       <nav className="space-y-1">
-//         {SECTIONS.map((section) => (
-//           <button
-//             key={section.key}
-//             onClick={() => onSelect(section.key)}
-//             className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-//               active === section.key ? "bg-brand-soft text-brand" : "text-slate-600 hover:bg-slate-100"
-//             }`}
-//           >
-//             <span className="w-7 text-[11px] font-semibold tracking-wide text-current/70">{section.icon}</span>
-//             {section.label}
-//           </button>
-//         ))}
-//       </nav>
-//     </aside>
-//   );
-// }
 const SECTIONS = [
-  { key: "sources", label: "Sources", icon: "⊞" },
-  { key: "dashboards", label: "Dashboards", icon: "◫" },
-  { key: "reports", label: "Reports", icon: "≡" },
-  { key: "history", label: "History", icon: "⟳" },
-  { key: "settings", label: "Settings", icon: "⚙" },
+  { key: "sources",    label: "Sources & Tools", badge: "SRC", color: "rgba(34,211,238,0.14)", textColor: "#22D3EE" },
+  { key: "dashboards", label: "Dashboards",      badge: "DSH", color: "rgba(99,102,241,0.14)", textColor: "#818CF8" },
+  { key: "reports",    label: "Reports",          badge: "RPT", color: "rgba(129,140,248,0.14)", textColor: "#A5B4FC" },
+  { key: "history",    label: "History",           badge: "HST", color: "rgba(148,163,184,0.14)", textColor: "#CBD5E1" },
+  { key: "settings",   label: "Settings",          badge: "SET", color: "rgba(148,163,184,0.14)", textColor: "#CBD5E1" },
 ];
 
-export default function Sidebar({ active, onSelect }) {
+export default function Sidebar({ active, onSelect, onNewAnalysis }) {
   return (
-    <aside className="hidden w-56 shrink-0 border-r border-slate-200 bg-slate-50/60 p-3 md:flex md:flex-col">
-      <p className="px-3 pb-2 pt-1 text-xs font-semibold uppercase tracking-wide text-slate-400">
-        Explorer
-      </p>
-      <nav className="space-y-0.5">
-        {SECTIONS.map((section) => (
-          <button
-            key={section.key}
-            onClick={() => onSelect(section.key)}
-            className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-              active === section.key
-                ? "bg-brand-soft text-brand"
-                : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
-            }`}
-          >
-            <span className="w-5 text-base leading-none">{section.icon}</span>
-            {section.label}
-          </button>
-        ))}
+    <aside className="hidden w-[230px] shrink-0 border-r border-border bg-[rgba(8,11,20,0.35)] p-3.5 md:flex md:flex-col gap-1.5">
+      <button
+        onClick={onNewAnalysis}
+        className="flex items-center gap-2.5 w-full rounded-xl bg-gradient-brand px-3.5 py-2.5 text-sm font-semibold text-[#050710] shadow-[0_6px_20px_rgba(34,211,238,0.28)] hover:-translate-y-0.5 transition-transform mb-2.5"
+      >
+        <span className="text-[15px]">&#xFF0B;</span> New analysis
+      </button>
+
+      <nav className="space-y-0.5 flex-1">
+        {SECTIONS.map((s) => {
+          const isActive = active === s.key;
+          return (
+            <button
+              key={s.key}
+              onClick={() => onSelect(s.key)}
+              className={`flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-sm font-medium transition-colors ${
+                isActive
+                  ? "bg-brand/10 text-ink"
+                  : "text-muted hover:bg-surface-2 hover:text-ink"
+              }`}
+            >
+              <span
+                className="flex h-[26px] w-[26px] items-center justify-center rounded-lg text-[11px] font-bold font-mono"
+                style={{ background: s.color, color: s.textColor }}
+              >
+                {s.badge}
+              </span>
+              <span className="flex-1 text-left">{s.label}</span>
+              {isActive && (
+                <span className="h-1.5 w-1.5 rounded-full bg-brand shadow-[0_0_8px_#22D3EE]" />
+              )}
+            </button>
+          );
+        })}
       </nav>
+
+      <div className="mt-auto rounded-xl bg-accent-indigo/[0.08] border border-accent-indigo/20 p-3.5">
+        <div className="text-[12.5px] font-semibold text-[#A5B0FF] mb-1">Free workspace</div>
+        <div className="text-[11.5px] text-muted-2 leading-relaxed">3 of 5 sources used</div>
+        <div className="h-[5px] rounded-full bg-surface-3 mt-2 overflow-hidden">
+          <div className="w-3/5 h-full bg-gradient-brand rounded-full" />
+        </div>
+      </div>
     </aside>
   );
 }

@@ -13,7 +13,6 @@ export default function Signup() {
   const submit = async (event) => {
     event.preventDefault();
     if (busy) return;
-
     setError("");
     setBusy(true);
     try {
@@ -28,33 +27,19 @@ export default function Signup() {
 
   return (
     <AuthShell title="Create your account" subtitle="Start querying your data in minutes" onSubmit={submit}>
-      <Field
-        label="Full name"
-        value={form.full_name}
-        onChange={(v) => setForm({ ...form, full_name: v })}
-      />
-      <Field
-        label="Email"
-        type="email"
-        value={form.email}
-        onChange={(v) => setForm({ ...form, email: v })}
-      />
-      <Field
-        label="Password"
-        type="password"
-        value={form.password}
-        onChange={(v) => setForm({ ...form, password: v })}
-      />
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      <Field label="Full name" value={form.full_name} onChange={(v) => setForm({ ...form, full_name: v })} />
+      <Field label="Email" type="email" value={form.email} onChange={(v) => setForm({ ...form, email: v })} />
+      <Field label="Password" type="password" value={form.password} onChange={(v) => setForm({ ...form, password: v })} />
+      {error && <p className="text-sm text-accent-rose">{error}</p>}
       <button
         type="submit"
         disabled={busy}
-        className="w-full rounded-xl bg-brand py-3 font-medium text-white hover:bg-brand-dark disabled:opacity-60"
+        className="w-full rounded-xl bg-gradient-brand py-3 font-semibold text-[#050710] shadow-glow-sm hover:-translate-y-0.5 transition-transform disabled:opacity-60"
       >
         {busy ? "Creating..." : "Create account"}
       </button>
-      <p className="text-center text-sm text-slate-500">
-        Have an account? <Link to="/login" className="font-medium text-brand">Log in</Link>
+      <p className="text-center text-sm text-muted">
+        Have an account? <Link to="/login" className="font-semibold text-brand hover:underline">Log in</Link>
       </p>
     </AuthShell>
   );

@@ -9,7 +9,7 @@ const Workspace = lazy(() => import("./pages/Workspace"));
 
 export default function App() {
   return (
-    <Suspense fallback={<div className="grid h-screen place-items-center text-slate-400">Loading...</div>}>
+    <Suspense fallback={<div className="grid h-screen place-items-center text-muted-2">Loading...</div>}>
       <Routes>
         <Route path="/" element={<Landing />} />
         <Route path="/login" element={<Login />} />

@@ -122,11 +122,11 @@ export default function ExcelTool({ onBack, chatContext }) {
     <div className="flex h-full flex-col space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <button onClick={onBack} className="mb-1 text-sm text-slate-500 hover:text-slate-800">
+          <button onClick={onBack} className="mb-1 text-sm text-muted hover:text-ink">
             ← Back to Tools
           </button>
-          <h2 className="font-display text-xl font-semibold text-slate-900">Chat with Data</h2>
-          <p className="text-sm text-slate-500">Upload a file and ask questions about it in plain English.</p>
+          <h2 className="font-display text-xl font-semibold text-ink">Chat with Data</h2>
+          <p className="text-sm text-muted">Upload a file and ask questions about it in plain English.</p>
         </div>
       </div>
 
@@ -135,20 +135,20 @@ export default function ExcelTool({ onBack, chatContext }) {
           onDrop={handleDrop}
           onDragOver={(e) => e.preventDefault()}
           onClick={() => fileRef.current.click()}
-          className="flex cursor-pointer flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed border-slate-300 bg-slate-50 px-8 py-14 text-center transition-colors hover:border-brand hover:bg-brand-soft/30"
+          className="flex cursor-pointer flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed border-border-2 bg-surface-1 px-8 py-14 text-center transition-colors hover:border-brand hover:bg-brand/10/30"
         >
-          <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-emerald-50 text-2xl font-bold text-emerald-700">
+          <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-accent-emerald/10 text-2xl font-bold text-accent-emerald">
             📂
           </div>
           {uploading ? (
-            <p className="text-sm font-medium text-slate-600">Uploading…</p>
+            <p className="text-sm font-medium text-muted">Uploading…</p>
           ) : (
             <>
-              <p className="font-medium text-slate-700">Drop any data file here</p>
-              <p className="text-sm text-slate-400">.csv · .xlsx · .xls · .json · .tsv · .parquet · .xml · .pdf · .docx</p>
+              <p className="font-medium text-ink">Drop any data file here</p>
+              <p className="text-sm text-muted-2">.csv · .xlsx · .xls · .json · .tsv · .parquet · .xml · .pdf · .docx</p>
             </>
           )}
-          {uploadError && <p className="text-sm text-red-600">{uploadError}</p>}
+          {uploadError && <p className="text-sm text-accent-rose">{uploadError}</p>}
           <input
             ref={fileRef}
             type="file"
@@ -161,23 +161,23 @@ export default function ExcelTool({ onBack, chatContext }) {
 
       {sourceId && (
         <>
-          <div className="flex items-center justify-between rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2">
-            <span className="text-sm font-medium text-emerald-700">📄 {file?.name}</span>
+          <div className="flex items-center justify-between rounded-xl border border-emerald-200 bg-accent-emerald/10 px-4 py-2">
+            <span className="text-sm font-medium text-accent-emerald">📄 {file?.name}</span>
             <button
               onClick={() => { setFile(null); setSourceId(null); setMessages([]); }}
-              className="text-xs text-slate-500 hover:text-red-600"
+              className="text-xs text-muted hover:text-accent-rose"
             >
               Change file
             </button>
           </div>
 
-          <div className="flex-1 overflow-y-auto rounded-2xl border border-slate-200 bg-white p-4 space-y-3 min-h-[300px] max-h-[65vh]">
+          <div className="flex-1 overflow-y-auto rounded-2xl border border-border bg-surface-1 p-4 space-y-3 min-h-[300px] max-h-[65vh]">
             {messages.map((msg, i) => (
               <ChatBubble key={i} msg={msg} sourceId={sourceId} />
             ))}
             {asking && (
               <div className="flex justify-start">
-                <div className="rounded-2xl bg-slate-100 px-4 py-2 text-sm text-slate-500 animate-pulse">
+                <div className="rounded-2xl bg-surface-2 px-4 py-2 text-sm text-muted animate-pulse">
                   Analyzing your data…
                 </div>
               </div>
@@ -192,12 +192,12 @@ export default function ExcelTool({ onBack, chatContext }) {
               onChange={(e) => setQuestion(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && sendQuestion()}
               placeholder="Ask a question about your data…"
-              className="flex-1 rounded-xl border border-slate-200 px-4 py-2.5 text-sm outline-none focus:border-brand focus:ring-2 focus:ring-brand/20"
+              className="flex-1 rounded-xl border border-border px-4 py-2.5 text-sm outline-none focus:border-brand/50 focus:ring-2 focus:ring-brand/10"
             />
             <button
               onClick={sendQuestion}
               disabled={!question.trim() || asking}
-              className="rounded-xl bg-brand px-5 py-2.5 text-sm font-medium text-white hover:bg-brand-dark disabled:opacity-50"
+              className="rounded-xl bg-brand px-5 py-2.5 text-sm font-medium text-white hover:-translate-y-0.5 disabled:opacity-50"
             >
               Send
             </button>
@@ -222,12 +222,12 @@ function DownloadButtons({ sourceId, question }) {
     } catch { /* ignore */ } finally { setDownloading(false); }
   };
   return (
-    <div className="flex gap-2 pt-2 border-t border-slate-200">
-      <span className="text-xs text-slate-400 self-center">Download:</span>
+    <div className="flex gap-2 pt-2 border-t border-border">
+      <span className="text-xs text-muted-2 self-center">Download:</span>
       {[
-        { fmt: "excel", label: "Excel", bg: "bg-green-50 text-green-700 hover:bg-green-100" },
-        { fmt: "pdf", label: "PDF", bg: "bg-red-50 text-red-700 hover:bg-red-100" },
-        { fmt: "json", label: "JSON", bg: "bg-blue-50 text-blue-700 hover:bg-blue-100" },
+        { fmt: "excel", label: "Excel", bg: "bg-accent-emerald/10 text-accent-emerald hover:bg-green-100" },
+        { fmt: "pdf", label: "PDF", bg: "bg-accent-rose/10 text-accent-rose hover:bg-red-100" },
+        { fmt: "json", label: "JSON", bg: "bg-brand/10 text-brand hover:bg-blue-100" },
       ].map(({ fmt, label, bg }) => (
         <button key={fmt} onClick={() => handleDownload(fmt)} disabled={downloading}
           className={`rounded-lg px-3 py-1 text-xs font-medium disabled:opacity-50 ${bg}`}>{label}</button>
@@ -241,9 +241,9 @@ function DownloadButtons({ sourceId, question }) {
 function ConfidenceBadge({ score }) {
   if (score == null) return null;
   const pct = Math.round(score * 100);
-  const color = pct >= 80 ? "bg-green-100 text-green-700"
+  const color = pct >= 80 ? "bg-green-100 text-accent-emerald"
     : pct >= 50 ? "bg-yellow-100 text-yellow-700"
-    : "bg-red-100 text-red-700";
+    : "bg-red-100 text-accent-rose";
   return (
     <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ${color}`}>
       {pct}% confidence
@@ -267,7 +267,7 @@ function ChatBubble({ msg, sourceId }) {
   if (msg.error) {
     return (
       <div className="flex justify-start">
-        <div className="max-w-[80%] rounded-2xl bg-red-50 border border-red-200 px-4 py-2.5 text-sm text-red-700">{msg.text}</div>
+        <div className="max-w-[80%] rounded-2xl bg-accent-rose/10 border border-accent-rose/25 px-4 py-2.5 text-sm text-accent-rose">{msg.text}</div>
       </div>
     );
   }
@@ -276,15 +276,15 @@ function ChatBubble({ msg, sourceId }) {
   if (msg.type === "text") {
     return (
       <div className="flex justify-start">
-        <div className="max-w-[90%] rounded-2xl bg-slate-50 border border-slate-200 p-4 space-y-3">
-          <div className="text-sm text-slate-800 leading-relaxed whitespace-pre-wrap">{msg.answer}</div>
+        <div className="max-w-[90%] rounded-2xl bg-surface-1 border border-border p-4 space-y-3">
+          <div className="text-sm text-ink leading-relaxed whitespace-pre-wrap">{msg.answer}</div>
           {msg.excerpts?.length > 0 && (
             <div className="space-y-2">
-              <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Source References</h4>
+              <h4 className="text-xs font-semibold text-muted uppercase tracking-wide">Source References</h4>
               {msg.excerpts.map((exc, i) => (
-                <div key={i} className="rounded-lg bg-white border border-slate-200 p-3">
+                <div key={i} className="rounded-lg bg-surface-1 border border-border p-3">
                   <span className="text-xs font-medium text-brand">Section {exc.section}</span>
-                  <p className="text-xs text-slate-600 mt-1 line-clamp-3">{exc.content}</p>
+                  <p className="text-xs text-muted mt-1 line-clamp-3">{exc.content}</p>
                 </div>
               ))}
             </div>
@@ -299,7 +299,7 @@ function ChatBubble({ msg, sourceId }) {
   if (msg.type === "info") {
     return (
       <div className="flex justify-start">
-        <div className="max-w-[80%] rounded-2xl bg-slate-100 px-4 py-2.5 text-sm text-slate-800 whitespace-pre-wrap">{msg.answer}</div>
+        <div className="max-w-[80%] rounded-2xl bg-surface-2 px-4 py-2.5 text-sm text-ink whitespace-pre-wrap">{msg.answer}</div>
       </div>
     );
   }
@@ -307,18 +307,18 @@ function ChatBubble({ msg, sourceId }) {
   // ─── Tabular response ───
   return (
     <div className="flex justify-start w-full">
-      <div className="max-w-full w-full rounded-2xl bg-slate-50 border border-slate-200 p-4 space-y-3">
+      <div className="max-w-full w-full rounded-2xl bg-surface-1 border border-border p-4 space-y-3">
 
         {/* Answer + confidence */}
         <div className="flex items-start justify-between gap-3">
-          <div className="text-sm text-slate-800 leading-relaxed whitespace-pre-wrap flex-1">{msg.answer}</div>
+          <div className="text-sm text-ink leading-relaxed whitespace-pre-wrap flex-1">{msg.answer}</div>
           <ConfidenceBadge score={msg.confidence} />
         </div>
 
         {/* Insights */}
         {msg.insights?.length > 0 && (
-          <div className="rounded-xl bg-blue-50 border border-blue-100 p-3">
-            <h4 className="text-xs font-semibold text-blue-600 uppercase tracking-wide mb-1.5">Insights</h4>
+          <div className="rounded-xl bg-brand/10 border border-blue-100 p-3">
+            <h4 className="text-xs font-semibold text-brand uppercase tracking-wide mb-1.5">Insights</h4>
             <ul className="space-y-1">
               {msg.insights.map((item, idx) => (
                 <li key={idx} className="text-sm text-blue-800 flex items-start gap-1.5">
@@ -341,21 +341,21 @@ function ChatBubble({ msg, sourceId }) {
 
         {/* Table */}
         {msg.table?.length > 0 && (
-          <div className="overflow-auto rounded-lg border border-slate-200 max-h-[300px]">
+          <div className="overflow-auto rounded-lg border border-border max-h-[300px]">
             <table className="min-w-full text-sm">
-              <thead className="bg-slate-200 sticky top-0 z-10">
+              <thead className="bg-surface-2 sticky top-0 z-10">
                 <tr>
                   {Object.keys(msg.table[0]).map((col) => (
-                    <th key={col} className="px-3 py-2 text-left text-xs font-semibold text-slate-600 whitespace-nowrap">{col}</th>
+                    <th key={col} className="px-3 py-2 text-left text-xs font-semibold text-muted whitespace-nowrap">{col}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {msg.table.map((row, idx) => (
-                  <tr key={idx} className="border-t border-slate-100 hover:bg-slate-50">
+                  <tr key={idx} className="border-t border-border hover:bg-surface-1">
                     {Object.values(row).map((value, i) => (
-                      <td key={i} className="px-3 py-2 text-slate-700 whitespace-nowrap">
-                        {value === null ? <span className="text-slate-300 italic">null</span> : String(value)}
+                      <td key={i} className="px-3 py-2 text-ink whitespace-nowrap">
+                        {value === null ? <span className="text-muted-2 italic">null</span> : String(value)}
                       </td>
                     ))}
                   </tr>
@@ -368,7 +368,7 @@ function ChatBubble({ msg, sourceId }) {
         {/* SQL */}
         {msg.sql && (
           <details className="group">
-            <summary className="text-xs font-semibold text-slate-500 uppercase tracking-wide cursor-pointer hover:text-slate-700">
+            <summary className="text-xs font-semibold text-muted uppercase tracking-wide cursor-pointer hover:text-ink">
               Generated SQL
             </summary>
             <pre className="mt-2 rounded-lg bg-slate-900 text-green-400 p-3 text-xs overflow-x-auto">{msg.sql}</pre>

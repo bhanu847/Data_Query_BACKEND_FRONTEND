@@ -12,7 +12,6 @@ export default function Login() {
   const submit = async (event) => {
     event.preventDefault();
     if (busy) return;
-
     setError("");
     setBusy(true);
     try {
@@ -27,28 +26,18 @@ export default function Login() {
 
   return (
     <AuthShell title="Welcome back" subtitle="Log in to your workspace" onSubmit={submit}>
-      <Field
-        label="Email"
-        type="email"
-        value={form.email}
-        onChange={(v) => setForm({ ...form, email: v })}
-      />
-      <Field
-        label="Password"
-        type="password"
-        value={form.password}
-        onChange={(v) => setForm({ ...form, password: v })}
-      />
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      <Field label="Email" type="email" value={form.email} onChange={(v) => setForm({ ...form, email: v })} />
+      <Field label="Password" type="password" value={form.password} onChange={(v) => setForm({ ...form, password: v })} />
+      {error && <p className="text-sm text-accent-rose">{error}</p>}
       <button
         type="submit"
         disabled={busy}
-        className="w-full rounded-xl bg-brand py-3 font-medium text-white hover:bg-brand-dark disabled:opacity-60"
+        className="w-full rounded-xl bg-gradient-brand py-3 font-semibold text-[#050710] shadow-glow-sm hover:-translate-y-0.5 transition-transform disabled:opacity-60"
       >
         {busy ? "Logging in..." : "Log in"}
       </button>
-      <p className="text-center text-sm text-slate-500">
-        No account? <Link to="/signup" className="font-medium text-brand">Sign up</Link>
+      <p className="text-center text-sm text-muted">
+        No account? <Link to="/signup" className="font-semibold text-brand hover:underline">Sign up</Link>
       </p>
     </AuthShell>
   );
@@ -56,17 +45,24 @@ export default function Login() {
 
 export function AuthShell({ title, subtitle, children, onSubmit }) {
   return (
-    <div className="grid min-h-screen place-items-center bg-slate-50 px-5">
+    <div className="relative grid min-h-screen place-items-center px-5">
+      <div className="bg-scene">
+        <div className="orb-a" />
+        <div className="orb-b" />
+        <div className="orb-c" />
+        <div className="grid-overlay" />
+        <div className="vignette" />
+      </div>
       <form
         onSubmit={onSubmit}
-        className="w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-7 shadow-card"
+        className="relative z-10 w-full max-w-sm rounded-2xl border border-border bg-[rgba(8,11,20,0.7)] backdrop-blur-xl p-7 shadow-card"
       >
-        <Link to="/" className="mb-6 flex items-center gap-2">
-          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand text-sm font-bold text-white">DQ</span>
-          <span className="font-display text-lg font-semibold">DataQuery AI</span>
+        <Link to="/" className="mb-6 flex items-center gap-2.5">
+          <span className="flex h-8 w-8 items-center justify-center rounded-[9px] bg-gradient-brand text-sm font-bold text-[#050710] shadow-[0_0_18px_rgba(34,211,238,0.4)] font-display">Q</span>
+          <span className="font-display text-lg font-semibold">DataQuery<span className="text-brand"> AI</span></span>
         </Link>
-        <h1 className="font-display text-2xl font-semibold">{title}</h1>
-        <p className="mb-6 mt-1 text-sm text-slate-500">{subtitle}</p>
+        <h1 className="font-display text-2xl font-bold">{title}</h1>
+        <p className="mb-6 mt-1 text-sm text-muted">{subtitle}</p>
         <div className="space-y-4">{children}</div>
       </form>
     </div>
@@ -76,13 +72,13 @@ export function AuthShell({ title, subtitle, children, onSubmit }) {
 export function Field({ label, type = "text", value, onChange }) {
   return (
     <label className="block">
-      <span className="mb-1 block text-sm font-medium text-slate-600">{label}</span>
+      <span className="mb-1.5 block text-xs font-semibold text-muted">{label}</span>
       <input
         type={type}
         value={value}
         required
         onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-brand focus:ring-2 focus:ring-brand/20"
+        className="w-full rounded-xl bg-surface-2 border border-border px-3.5 py-2.5 text-sm text-ink outline-none focus:border-brand/50 focus:ring-2 focus:ring-brand/10 transition-all"
       />
     </label>
   );

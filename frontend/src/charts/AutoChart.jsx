@@ -15,12 +15,13 @@ import html2canvas from "html2canvas";
 import { jsPDF } from "jspdf";
 
 const PALETTE = [
-  "#2563EB", "#7C3AED", "#059669", "#EA580C", "#DB2777",
-  "#0891B2", "#CA8A04", "#6366F1", "#DC2626", "#14B8A6",
-  "#F59E0B", "#8B5CF6", "#EC4899", "#06B6D4", "#84CC16",
+  "#22D3EE", "#818CF8", "#34D399", "#FB923C", "#FB7185",
+  "#38BDF8", "#FBBF24", "#A78BFA", "#F87171", "#2DD4BF",
+  "#4ADE80", "#E879F9", "#67E8F9", "#FCD34D", "#86EFAC",
 ];
 
 export default function AutoChart({ spec, height = 280, onEdit, onDuplicate, onDelete, showActions = false }) {
+  const isFluid = height === "100%";
   const chartRef = useRef(null);
   const [fullscreen, setFullscreen] = useState(false);
 
@@ -52,9 +53,9 @@ export default function AutoChart({ spec, height = 280, onEdit, onDuplicate, onD
       case "line":
         return (
           <LineChart data={data} margin={{ top: 8, right: 16, bottom: 8, left: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#EEF2F7" />
-            <XAxis dataKey={x} tick={{ fontSize: 11 }} />
-            <YAxis tick={{ fontSize: 11 }} />
+            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" />
+            <XAxis dataKey={x} tick={{ fontSize: 11, fill: "#8A94A8" }} />
+            <YAxis tick={{ fontSize: 11, fill: "#8A94A8" }} />
             <Tooltip />
             <Legend />
             <Line type="monotone" dataKey={y} stroke={PALETTE[0]} strokeWidth={2} dot={false} />
@@ -64,9 +65,9 @@ export default function AutoChart({ spec, height = 280, onEdit, onDuplicate, onD
       case "bar":
         return (
           <BarChart data={data} margin={{ top: 8, right: 16, bottom: 8, left: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#EEF2F7" />
-            <XAxis dataKey={x} tick={{ fontSize: 11 }} />
-            <YAxis tick={{ fontSize: 11 }} />
+            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" />
+            <XAxis dataKey={x} tick={{ fontSize: 11, fill: "#8A94A8" }} />
+            <YAxis tick={{ fontSize: 11, fill: "#8A94A8" }} />
             <Tooltip />
             <Legend />
             <Bar dataKey={y} fill={PALETTE[0]} radius={[4, 4, 0, 0]} />
@@ -76,9 +77,9 @@ export default function AutoChart({ spec, height = 280, onEdit, onDuplicate, onD
       case "horizontal_bar":
         return (
           <BarChart data={data} layout="vertical" margin={{ top: 8, right: 16, bottom: 8, left: 60 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#EEF2F7" />
-            <XAxis type="number" tick={{ fontSize: 11 }} />
-            <YAxis dataKey={x} type="category" tick={{ fontSize: 11 }} width={55} />
+            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" />
+            <XAxis type="number" tick={{ fontSize: 11, fill: "#8A94A8" }} />
+            <YAxis dataKey={x} type="category" tick={{ fontSize: 11, fill: "#8A94A8" }} width={55} />
             <Tooltip />
             <Legend />
             <Bar dataKey={y} fill={PALETTE[1]} radius={[0, 4, 4, 0]} />
@@ -88,9 +89,9 @@ export default function AutoChart({ spec, height = 280, onEdit, onDuplicate, onD
       case "area":
         return (
           <AreaChart data={data} margin={{ top: 8, right: 16, bottom: 8, left: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#EEF2F7" />
-            <XAxis dataKey={x} tick={{ fontSize: 11 }} />
-            <YAxis tick={{ fontSize: 11 }} />
+            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" />
+            <XAxis dataKey={x} tick={{ fontSize: 11, fill: "#8A94A8" }} />
+            <YAxis tick={{ fontSize: 11, fill: "#8A94A8" }} />
             <Tooltip />
             <Legend />
             <Area type="monotone" dataKey={y} stroke={PALETTE[0]} fill={PALETTE[0]} fillOpacity={0.2} />
@@ -122,9 +123,9 @@ export default function AutoChart({ spec, height = 280, onEdit, onDuplicate, onD
       case "scatter":
         return (
           <ScatterChart margin={{ top: 8, right: 16, bottom: 8, left: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#EEF2F7" />
-            <XAxis dataKey={x} type="number" name={x} tick={{ fontSize: 11 }} />
-            <YAxis dataKey={y} type="number" name={y} tick={{ fontSize: 11 }} />
+            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" />
+            <XAxis dataKey={x} type="number" name={x} tick={{ fontSize: 11, fill: "#8A94A8" }} />
+            <YAxis dataKey={y} type="number" name={y} tick={{ fontSize: 11, fill: "#8A94A8" }} />
             <Tooltip cursor={{ strokeDasharray: "3 3" }} />
             <Scatter data={data} fill={PALETTE[1]} />
           </ScatterChart>
@@ -133,9 +134,9 @@ export default function AutoChart({ spec, height = 280, onEdit, onDuplicate, onD
       case "bubble":
         return (
           <ScatterChart margin={{ top: 8, right: 16, bottom: 8, left: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#EEF2F7" />
-            <XAxis dataKey={x} type="number" name={x} tick={{ fontSize: 11 }} />
-            <YAxis dataKey={y} type="number" name={y} tick={{ fontSize: 11 }} />
+            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" />
+            <XAxis dataKey={x} type="number" name={x} tick={{ fontSize: 11, fill: "#8A94A8" }} />
+            <YAxis dataKey={y} type="number" name={y} tick={{ fontSize: 11, fill: "#8A94A8" }} />
             <Tooltip cursor={{ strokeDasharray: "3 3" }} />
             <Scatter data={data} fill={PALETTE[2]} fillOpacity={0.6}>
               {data.map((_, i) => <Cell key={i} fill={PALETTE[i % PALETTE.length]} />)}
@@ -146,9 +147,9 @@ export default function AutoChart({ spec, height = 280, onEdit, onDuplicate, onD
       case "histogram":
         return (
           <BarChart data={data} margin={{ top: 8, right: 16, bottom: 8, left: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#EEF2F7" />
-            <XAxis dataKey={x || "bin"} tick={{ fontSize: 10, angle: -30 }} />
-            <YAxis tick={{ fontSize: 11 }} />
+            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" />
+            <XAxis dataKey={x || "bin"} tick={{ fontSize: 10, angle: -30, fill: "#8A94A8" }} />
+            <YAxis tick={{ fontSize: 11, fill: "#8A94A8" }} />
             <Tooltip />
             <Bar dataKey={y || "count"} fill={PALETTE[3]} radius={[2, 2, 0, 0]} />
           </BarChart>
@@ -166,9 +167,9 @@ export default function AutoChart({ spec, height = 280, onEdit, onDuplicate, onD
         ];
         return (
           <BarChart data={boxData} margin={{ top: 8, right: 16, bottom: 8, left: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#EEF2F7" />
-            <XAxis dataKey="name" tick={{ fontSize: 11 }} />
-            <YAxis tick={{ fontSize: 11 }} />
+            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" />
+            <XAxis dataKey="name" tick={{ fontSize: 11, fill: "#8A94A8" }} />
+            <YAxis tick={{ fontSize: 11, fill: "#8A94A8" }} />
             <Tooltip />
             <Bar dataKey="value" fill={PALETTE[4]}>
               {boxData.map((_, i) => <Cell key={i} fill={PALETTE[i % PALETTE.length]} />)}
@@ -186,16 +187,16 @@ export default function AutoChart({ spec, height = 280, onEdit, onDuplicate, onD
             <table className="w-full text-xs border-collapse">
               <thead>
                 <tr>
-                  <th className="p-1 border border-slate-200 bg-slate-50"></th>
+                  <th className="p-1 border border-border bg-surface-1"></th>
                   {cols.map((c) => (
-                    <th key={c} className="p-1 border border-slate-200 bg-slate-50 font-medium truncate max-w-[80px]">{c}</th>
+                    <th key={c} className="p-1 border border-border bg-surface-1 font-medium truncate max-w-[80px]">{c}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {rows.map((row) => (
                   <tr key={row}>
-                    <td className="p-1 border border-slate-200 bg-slate-50 font-medium truncate max-w-[80px]">{row}</td>
+                    <td className="p-1 border border-border bg-surface-1 font-medium truncate max-w-[80px]">{row}</td>
                     {cols.map((col) => {
                       const cell = data.find((d) => d.x === col && d.y === row);
                       const val = cell?.value ?? 0;
@@ -204,7 +205,7 @@ export default function AutoChart({ spec, height = 280, onEdit, onDuplicate, onD
                         ? `rgba(37, 99, 235, ${intensity * 0.8})`
                         : `rgba(220, 38, 38, ${intensity * 0.8})`;
                       return (
-                        <td key={col} className="p-1 border border-slate-200 text-center font-mono"
+                        <td key={col} className="p-1 border border-border text-center font-mono"
                           style={{ backgroundColor: bg, color: intensity > 0.5 ? "#fff" : "#334155" }}>
                           {val.toFixed(2)}
                         </td>
@@ -222,7 +223,7 @@ export default function AutoChart({ spec, height = 280, onEdit, onDuplicate, onD
         return (
           <RadarChart cx="50%" cy="50%" outerRadius="70%" data={data}>
             <PolarGrid />
-            <PolarAngleAxis dataKey={x} tick={{ fontSize: 11 }} />
+            <PolarAngleAxis dataKey={x} tick={{ fontSize: 11, fill: "#8A94A8" }} />
             <PolarRadiusAxis tick={{ fontSize: 10 }} />
             <Tooltip />
             <Radar dataKey={y} stroke={PALETTE[0]} fill={PALETTE[0]} fillOpacity={0.3} />
@@ -255,7 +256,7 @@ export default function AutoChart({ spec, height = 280, onEdit, onDuplicate, onD
           <FunnelChart>
             <Tooltip />
             <Funnel dataKey={y} data={data.map((d, i) => ({ ...d, name: d[x], fill: PALETTE[i % PALETTE.length] }))} isAnimationActive>
-              <LabelList position="right" fill="#334155" fontSize={11} dataKey="name" />
+              <LabelList position="right" fill="#E8EDF7" fontSize={11} dataKey="name" />
             </Funnel>
           </FunnelChart>
         );
@@ -270,9 +271,9 @@ export default function AutoChart({ spec, height = 280, onEdit, onDuplicate, onD
         });
         return (
           <BarChart data={wData} margin={{ top: 8, right: 16, bottom: 8, left: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#EEF2F7" />
-            <XAxis dataKey="name" tick={{ fontSize: 11 }} />
-            <YAxis tick={{ fontSize: 11 }} />
+            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" />
+            <XAxis dataKey="name" tick={{ fontSize: 11, fill: "#8A94A8" }} />
+            <YAxis tick={{ fontSize: 11, fill: "#8A94A8" }} />
             <Tooltip />
             <Bar dataKey="start" stackId="a" fill="transparent" />
             <Bar dataKey="value" stackId="a" radius={[4, 4, 0, 0]}>
@@ -295,7 +296,7 @@ export default function AutoChart({ spec, height = 280, onEdit, onDuplicate, onD
         return (
           <div className="flex flex-col items-center justify-center" style={{ height: h }}>
             <div className="relative w-40 h-20 overflow-hidden">
-              <div className="absolute w-40 h-40 rounded-full border-[16px] border-slate-100" style={{ top: 0 }} />
+              <div className="absolute w-40 h-40 rounded-full border-[16px] border-surface-2" style={{ top: 0 }} />
               <div
                 className="absolute w-40 h-40 rounded-full border-[16px] border-transparent"
                 style={{
@@ -309,7 +310,7 @@ export default function AutoChart({ spec, height = 280, onEdit, onDuplicate, onD
               />
             </div>
             <p className="mt-2 text-2xl font-bold" style={{ color }}>{typeof val === "number" ? val.toLocaleString(undefined, { maximumFractionDigits: 2 }) : val}</p>
-            <p className="text-xs text-slate-400">{min.toLocaleString()} — {max.toLocaleString()}</p>
+            <p className="text-xs text-muted-2">{min.toLocaleString()} — {max.toLocaleString()}</p>
           </div>
         );
       }
@@ -317,9 +318,9 @@ export default function AutoChart({ spec, height = 280, onEdit, onDuplicate, onD
       case "top_n":
         return (
           <BarChart data={data} layout="vertical" margin={{ top: 8, right: 16, bottom: 8, left: 80 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#EEF2F7" />
-            <XAxis type="number" tick={{ fontSize: 11 }} />
-            <YAxis dataKey={x} type="category" tick={{ fontSize: 11 }} width={75} />
+            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" />
+            <XAxis type="number" tick={{ fontSize: 11, fill: "#8A94A8" }} />
+            <YAxis dataKey={x} type="category" tick={{ fontSize: 11, fill: "#8A94A8" }} width={75} />
             <Tooltip />
             <Bar dataKey={y} radius={[0, 4, 4, 0]}>
               {data.map((_, i) => <Cell key={i} fill={PALETTE[i % PALETTE.length]} />)}
@@ -329,7 +330,7 @@ export default function AutoChart({ spec, height = 280, onEdit, onDuplicate, onD
 
       default:
         return (
-          <div className="grid h-full place-items-center text-sm text-slate-400">
+          <div className="grid h-full place-items-center text-sm text-muted-2">
             Unsupported chart type: {type}
           </div>
         );
@@ -337,8 +338,10 @@ export default function AutoChart({ spec, height = 280, onEdit, onDuplicate, onD
   };
 
   const containerClass = fullscreen
-    ? "fixed inset-0 z-50 bg-white p-6 overflow-auto"
-    : "rounded-2xl border border-slate-200 bg-white p-4 shadow-card";
+    ? "fixed inset-0 z-50 bg-surface-1 p-6 overflow-auto"
+    : isFluid
+      ? "h-full flex flex-col p-3"
+      : "rounded-2xl border border-border bg-surface-1 p-4 shadow-card";
 
   return (
     <div className={containerClass} ref={chartRef}>
@@ -347,37 +350,39 @@ export default function AutoChart({ spec, height = 280, onEdit, onDuplicate, onD
         {showActions && (
           <div className="flex items-center gap-1 ml-2 shrink-0">
             {onEdit && (
-              <button onClick={onEdit} className="p-1 rounded hover:bg-slate-100 text-slate-400 hover:text-slate-600" title="Edit">
+              <button onClick={onEdit} className="p-1 rounded hover:bg-surface-2 text-muted-2 hover:text-muted" title="Edit">
                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
               </button>
             )}
             {onDuplicate && (
-              <button onClick={onDuplicate} className="p-1 rounded hover:bg-slate-100 text-slate-400 hover:text-slate-600" title="Duplicate">
+              <button onClick={onDuplicate} className="p-1 rounded hover:bg-surface-2 text-muted-2 hover:text-muted" title="Duplicate">
                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
               </button>
             )}
-            <button onClick={downloadPNG} className="p-1 rounded hover:bg-slate-100 text-slate-400 hover:text-slate-600" title="Download PNG">
+            <button onClick={downloadPNG} className="p-1 rounded hover:bg-surface-2 text-muted-2 hover:text-muted" title="Download PNG">
               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
             </button>
-            <button onClick={downloadPDF} className="p-1 rounded hover:bg-slate-100 text-slate-400 hover:text-slate-600" title="Download PDF">
+            <button onClick={downloadPDF} className="p-1 rounded hover:bg-surface-2 text-muted-2 hover:text-muted" title="Download PDF">
               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
             </button>
-            <button onClick={() => setFullscreen(!fullscreen)} className="p-1 rounded hover:bg-slate-100 text-slate-400 hover:text-slate-600" title={fullscreen ? "Exit Fullscreen" : "Fullscreen"}>
+            <button onClick={() => setFullscreen(!fullscreen)} className="p-1 rounded hover:bg-surface-2 text-muted-2 hover:text-muted" title={fullscreen ? "Exit Fullscreen" : "Fullscreen"}>
               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={fullscreen ? "M9 9L4 4m0 0v5m0-5h5m6 6l5 5m0 0v-5m0 5h-5" : "M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5v-4m0 4h-4m4 0l-5-5"} /></svg>
             </button>
             {onDelete && (
-              <button onClick={onDelete} className="p-1 rounded hover:bg-red-50 text-slate-400 hover:text-red-500" title="Delete">
+              <button onClick={onDelete} className="p-1 rounded hover:bg-accent-rose/10 text-muted-2 hover:text-accent-rose" title="Delete">
                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
               </button>
             )}
           </div>
         )}
       </div>
-      <ResponsiveContainer width="100%" height={fullscreen ? 500 : height}>
-        {renderChart(fullscreen ? 500 : height)}
-      </ResponsiveContainer>
+      <div className={isFluid ? "flex-1 min-h-0" : undefined}>
+        <ResponsiveContainer width="100%" height={fullscreen ? 500 : isFluid ? "100%" : height}>
+          {renderChart(fullscreen ? 500 : isFluid ? 200 : height)}
+        </ResponsiveContainer>
+      </div>
       {fullscreen && (
-        <button onClick={() => setFullscreen(false)} className="fixed top-4 right-4 z-50 rounded-lg bg-slate-800 px-3 py-1.5 text-sm text-white shadow-lg hover:bg-slate-700">
+        <button onClick={() => setFullscreen(false)} className="fixed top-4 right-4 z-50 rounded-lg bg-surface-2 border border-border px-3 py-1.5 text-sm text-ink shadow-lg hover:bg-surface-3 transition-colors">
           Exit Fullscreen
         </button>
       )}

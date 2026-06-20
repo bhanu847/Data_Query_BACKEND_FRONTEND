@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { getChartData, getFilterValues } from "../services/api";
+import AutoChart from "../charts/AutoChart";
 
 const CHART_CATEGORIES = [
   {
@@ -48,6 +49,9 @@ const NEEDS_X_AND_Y = ["bar", "horizontal_bar", "line", "area", "pie", "donut", 
 const NEEDS_ONLY_X = ["histogram", "box_plot"];
 const NEEDS_ONLY_Y_GAUGE = ["gauge"];
 const NO_COLUMNS = ["heatmap", "correlation_matrix"];
+
+const selectClass = "w-full rounded-xl bg-surface-2 border border-border px-3 py-2.5 text-sm text-ink outline-none focus:border-brand/50 focus:ring-2 focus:ring-brand/10 transition-all appearance-none";
+const inputClass = selectClass;
 
 export default function AddChartModal({ sourceId, columns, dtypes, onAdd, onClose, editChart }) {
   const [step, setStep] = useState(editChart ? 2 : 1);
@@ -148,42 +152,42 @@ export default function AddChartModal({ sourceId, columns, dtypes, onAdd, onClos
   const needsOnlyX = NEEDS_ONLY_X.includes(chartType);
   const needsOnlyY = NEEDS_ONLY_Y_GAUGE.includes(chartType);
   const noColumns = NO_COLUMNS.includes(chartType);
-
   const canPreview = noColumns || (needsOnlyY && yColumn) || (needsOnlyX && xColumn) || (needsXY && xColumn && yColumn);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl bg-white shadow-xl">
-        <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
-          <h3 className="font-display text-lg font-semibold text-slate-900">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={onClose}>
+      <div className="w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-2xl bg-[#0c1020] border border-border shadow-2xl" onClick={(e) => e.stopPropagation()}>
+        {/* Header */}
+        <div className="flex items-center justify-between border-b border-border px-6 py-4 sticky top-0 bg-[#0c1020] z-10">
+          <h3 className="font-display text-lg font-bold text-ink">
             {editChart ? "Edit Chart" : "Add Chart"}
           </h3>
-          <button onClick={onClose} className="rounded-lg p-1 hover:bg-slate-100 text-slate-400">
+          <button onClick={onClose} className="rounded-lg p-1.5 hover:bg-surface-2 text-muted-2 transition-colors">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
         </div>
 
-        <div className="px-6 py-4 space-y-5">
+        <div className="px-6 py-5 space-y-5">
           {/* Step 1: Chart Type */}
           {step === 1 && (
-            <div className="space-y-4">
-              <p className="text-sm font-medium text-slate-600">Select Chart Type</p>
+            <div className="space-y-5">
+              <p className="text-sm font-semibold text-ink">Select Chart Type</p>
               {CHART_CATEGORIES.map((cat) => (
                 <div key={cat.label}>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-400 mb-2">{cat.label}</p>
+                  <p className="text-[11px] font-bold uppercase tracking-widest text-muted-2 mb-2.5">{cat.label}</p>
                   <div className="grid grid-cols-4 gap-2">
                     {cat.charts.map((chart) => (
                       <button
                         key={chart.type}
                         onClick={() => { setChartType(chart.type); setStep(2); }}
-                        className={`flex flex-col items-center gap-1 rounded-xl border p-3 text-center transition-all hover:border-brand/40 hover:shadow-sm ${
-                          chartType === chart.type ? "border-brand bg-brand-soft" : "border-slate-200"
+                        className={`flex flex-col items-center gap-1.5 rounded-xl border p-3 text-center transition-all hover:border-brand/50 hover:bg-brand/5 ${
+                          chartType === chart.type ? "border-brand bg-brand/10 shadow-[0_0_12px_rgba(34,211,238,0.15)]" : "border-border bg-surface-1"
                         }`}
                       >
                         <span className="text-lg">{chart.icon}</span>
-                        <span className="text-xs font-medium text-slate-700">{chart.label}</span>
+                        <span className="text-[11px] font-medium text-ink">{chart.label}</span>
                       </button>
                     ))}
                   </div>
@@ -192,23 +196,22 @@ export default function AddChartModal({ sourceId, columns, dtypes, onAdd, onClos
             </div>
           )}
 
-          {/* Step 2: Column Mapping */}
+          {/* Step 2: Column Mapping + Preview */}
           {step === 2 && (
             <div className="space-y-4">
-              <div className="flex items-center gap-2 mb-2">
-                <button onClick={() => setStep(1)} className="text-sm text-slate-500 hover:text-slate-800">← Change Type</button>
-                <span className="text-sm font-medium text-brand capitalize">{chartType.replace(/_/g, " ")}</span>
+              <div className="flex items-center gap-3 mb-1">
+                <button onClick={() => { setStep(1); setPreview(null); }} className="text-sm text-muted hover:text-ink transition-colors">← Change Type</button>
+                <span className="text-sm font-semibold text-brand capitalize">{chartType.replace(/_/g, " ")}</span>
               </div>
 
               {!noColumns && (
-                <>
+                <div className="grid grid-cols-2 gap-3">
                   {(needsXY || needsOnlyX) && (
                     <div>
-                      <label className="block text-sm font-medium text-slate-600 mb-1">
+                      <label className="block text-xs font-semibold text-muted mb-1.5">
                         {needsOnlyX ? "Column" : "X-Axis (Category/Date)"}
                       </label>
-                      <select value={xColumn} onChange={(e) => setXColumn(e.target.value)}
-                        className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-brand focus:outline-none">
+                      <select value={xColumn} onChange={(e) => setXColumn(e.target.value)} className={selectClass}>
                         <option value="">Select column...</option>
                         {(needsOnlyX ? numericCols : allCols).map((c) => (
                           <option key={c} value={c}>{c} ({dtypes[c]})</option>
@@ -216,14 +219,12 @@ export default function AddChartModal({ sourceId, columns, dtypes, onAdd, onClos
                       </select>
                     </div>
                   )}
-
                   {(needsXY || needsOnlyY) && (
                     <div>
-                      <label className="block text-sm font-medium text-slate-600 mb-1">
+                      <label className="block text-xs font-semibold text-muted mb-1.5">
                         {needsOnlyY ? "Metric Column" : "Y-Axis (Metric)"}
                       </label>
-                      <select value={yColumn} onChange={(e) => setYColumn(e.target.value)}
-                        className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-brand focus:outline-none">
+                      <select value={yColumn} onChange={(e) => setYColumn(e.target.value)} className={selectClass}>
                         <option value="">Select column...</option>
                         {numericCols.map((c) => (
                           <option key={c} value={c}>{c}</option>
@@ -231,106 +232,97 @@ export default function AddChartModal({ sourceId, columns, dtypes, onAdd, onClos
                       </select>
                     </div>
                   )}
-                </>
+                </div>
               )}
 
               <div className="grid grid-cols-3 gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-slate-500 mb-1">Aggregation</label>
-                  <select value={aggregation} onChange={(e) => setAggregation(e.target.value)}
-                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-brand focus:outline-none">
+                  <label className="block text-[11px] font-semibold text-muted mb-1.5">Aggregation</label>
+                  <select value={aggregation} onChange={(e) => setAggregation(e.target.value)} className={selectClass}>
                     {AGGREGATIONS.map((a) => <option key={a} value={a}>{a}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-slate-500 mb-1">Sort</label>
-                  <select value={sortOrder} onChange={(e) => setSortOrder(e.target.value)}
-                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-brand focus:outline-none">
+                  <label className="block text-[11px] font-semibold text-muted mb-1.5">Sort</label>
+                  <select value={sortOrder} onChange={(e) => setSortOrder(e.target.value)} className={selectClass}>
                     {SORT_OPTIONS.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-slate-500 mb-1">Limit</label>
-                  <input type="number" value={limit} onChange={(e) => setLimit(e.target.value)} placeholder="All"
-                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-brand focus:outline-none" />
+                  <label className="block text-[11px] font-semibold text-muted mb-1.5">Limit</label>
+                  <input type="number" value={limit} onChange={(e) => setLimit(e.target.value)} placeholder="All" className={inputClass} />
                 </div>
               </div>
 
               {/* Filters */}
               <div>
-                <label className="block text-xs font-medium text-slate-500 mb-1">Filters</label>
-                <div className="flex gap-2 mb-2">
-                  <select value={filterCol} onChange={(e) => loadFilterValues(e.target.value)}
-                    className="flex-1 rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-brand focus:outline-none">
-                    <option value="">Add filter...</option>
-                    {categoricalCols.map((c) => <option key={c} value={c}>{c}</option>)}
-                  </select>
-                </div>
+                <label className="block text-[11px] font-semibold text-muted mb-1.5">Filters</label>
+                <select value={filterCol} onChange={(e) => loadFilterValues(e.target.value)} className={selectClass}>
+                  <option value="">Add filter...</option>
+                  {categoricalCols.map((c) => <option key={c} value={c}>{c}</option>)}
+                </select>
                 {filterValues && filterValues.type === "categorical" && (
-                  <div className="rounded-lg border border-slate-200 p-3 mb-2 max-h-32 overflow-y-auto">
+                  <div className="rounded-xl border border-border bg-surface-1 p-3 mt-2 max-h-32 overflow-y-auto">
                     <div className="flex flex-wrap gap-1.5">
                       {filterValues.values.map((v) => (
                         <button key={v} onClick={() => {
                           setSelectedFilterVals((prev) => prev.includes(v) ? prev.filter((x) => x !== v) : [...prev, v]);
-                        }} className={`rounded-full px-2.5 py-0.5 text-xs transition-colors ${
-                          selectedFilterVals.includes(v) ? "bg-brand text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                        }} className={`rounded-full px-2.5 py-1 text-xs font-medium transition-colors ${
+                          selectedFilterVals.includes(v) ? "bg-brand text-[#050710]" : "bg-surface-2 text-muted hover:bg-surface-3"
                         }`}>{v}</button>
                       ))}
                     </div>
-                    <button onClick={applyFilter} className="mt-2 rounded-lg bg-brand px-3 py-1 text-xs text-white hover:bg-brand-dark">
+                    <button onClick={applyFilter} className="mt-2 rounded-lg bg-gradient-brand px-3 py-1.5 text-xs font-semibold text-[#050710]">
                       Apply Filter
                     </button>
                   </div>
                 )}
                 {Object.keys(filters).length > 0 && (
-                  <div className="flex flex-wrap gap-1.5">
+                  <div className="flex flex-wrap gap-1.5 mt-2">
                     {Object.entries(filters).map(([col, vals]) => (
-                      <span key={col} className="inline-flex items-center gap-1 rounded-full bg-violet-50 px-2.5 py-0.5 text-xs text-violet-700">
+                      <span key={col} className="inline-flex items-center gap-1 rounded-full bg-accent-violet/10 border border-accent-violet/25 px-2.5 py-1 text-xs font-medium text-accent-violet">
                         {col}: {Array.isArray(vals) ? vals.join(", ") : String(vals)}
-                        <button onClick={() => removeFilter(col)} className="hover:text-red-500">×</button>
+                        <button onClick={() => removeFilter(col)} className="hover:text-accent-rose ml-0.5">×</button>
                       </span>
                     ))}
                   </div>
                 )}
               </div>
 
-              {error && <p className="text-sm text-red-600">{error}</p>}
+              {error && <p className="text-sm text-accent-rose">{error}</p>}
 
-              <div className="flex gap-2">
+              {/* Action buttons */}
+              <div className="flex gap-2 pt-1">
                 <button onClick={generatePreview} disabled={!canPreview || loading}
-                  className="rounded-xl bg-slate-800 px-5 py-2 text-sm font-medium text-white hover:bg-slate-700 disabled:opacity-50">
+                  className="rounded-xl bg-surface-2 border border-border px-5 py-2.5 text-sm font-semibold text-ink hover:bg-surface-3 disabled:opacity-40 transition-all flex items-center gap-2">
+                  {loading && <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-brand border-t-transparent" />}
                   {loading ? "Generating..." : "Preview Chart"}
                 </button>
                 {preview && (
                   <button onClick={handleAdd}
-                    className="rounded-xl bg-brand px-5 py-2 text-sm font-medium text-white hover:bg-brand-dark">
+                    className="rounded-xl bg-gradient-brand px-5 py-2.5 text-sm font-semibold text-[#050710] shadow-glow-sm hover:-translate-y-0.5 transition-transform">
                     {editChart ? "Update Chart" : "Add to Dashboard"}
                   </button>
                 )}
               </div>
 
+              {/* Live chart preview */}
               {preview && preview.data?.length > 0 && (
-                <div className="border border-slate-200 rounded-xl p-3 bg-slate-50">
-                  <p className="text-xs text-slate-400 mb-2">Preview ({preview.data.length} data points)</p>
-                  <div className="overflow-x-auto max-h-40">
-                    <table className="w-full text-xs">
-                      <thead>
-                        <tr>
-                          {Object.keys(preview.data[0]).map((k) => (
-                            <th key={k} className="text-left p-1 border-b border-slate-200 font-medium text-slate-500">{k}</th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {preview.data.slice(0, 5).map((row, i) => (
-                          <tr key={i}>
-                            {Object.values(row).map((v, j) => (
-                              <td key={j} className="p-1 border-b border-slate-100 text-slate-600">{v != null ? String(v) : "—"}</td>
-                            ))}
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                <div className="rounded-xl border border-brand/20 bg-brand/[0.03] p-4 space-y-3">
+                  <p className="text-xs font-bold uppercase tracking-widest text-brand">
+                    Preview · {preview.data.length} data points
+                  </p>
+                  <div className="bg-surface-1 rounded-xl border border-border p-3">
+                    <AutoChart
+                      spec={{
+                        type: chartType,
+                        title: preview.title || `${chartType} chart`,
+                        x: xColumn,
+                        y: yColumn,
+                        data: preview.data,
+                      }}
+                      height={250}
+                    />
                   </div>
                 </div>
               )}

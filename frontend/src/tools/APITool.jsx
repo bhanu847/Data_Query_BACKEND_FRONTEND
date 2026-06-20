@@ -68,19 +68,19 @@ export default function APITool({ onBack }) {
   return (
     <div className="space-y-5">
       <div>
-        <button onClick={onBack} className="mb-1 text-sm text-slate-500 hover:text-slate-800">
+        <button onClick={onBack} className="mb-1 text-sm text-muted hover:text-ink">
           ← Back to Tools
         </button>
-        <h2 className="font-display text-xl font-semibold text-slate-900">API Analytics</h2>
-        <p className="text-sm text-slate-500">Connect any REST API and ask AI to analyze the response.</p>
+        <h2 className="font-display text-xl font-semibold text-ink">API Analytics</h2>
+        <p className="text-sm text-muted">Connect any REST API and ask AI to analyze the response.</p>
       </div>
 
-      <div className="rounded-2xl border border-slate-200 bg-white p-6 space-y-4">
+      <div className="rounded-2xl border border-border bg-surface-1 p-6 space-y-4">
         <div className="flex gap-2">
           <select
             value={method}
             onChange={(e) => setMethod(e.target.value)}
-            className="rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-brand"
+            className="rounded-xl border border-border px-3 py-2 text-sm outline-none focus:border-brand/50"
           >
             <option>GET</option>
             <option>POST</option>
@@ -90,20 +90,20 @@ export default function APITool({ onBack }) {
             value={url}
             onChange={(e) => setUrl(e.target.value)}
             placeholder="https://api.example.com/data"
-            className="flex-1 rounded-xl border border-slate-200 px-4 py-2 text-sm outline-none focus:border-brand focus:ring-2 focus:ring-brand/20"
+            className="flex-1 rounded-xl border border-border px-4 py-2 text-sm outline-none focus:border-brand/50 focus:ring-2 focus:ring-brand/10"
           />
         </div>
 
         {/* Auth */}
         <div className="space-y-2">
-          <label className="text-xs font-medium text-slate-600">Authentication</label>
+          <label className="text-xs font-medium text-muted">Authentication</label>
           <div className="flex flex-wrap gap-2">
             {AUTH_TYPES.map((a) => (
               <button
                 key={a}
                 onClick={() => setAuthType(a)}
                 className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors ${
-                  authType === a ? "border-brand bg-brand-soft text-brand" : "border-slate-200 text-slate-600 hover:bg-slate-50"
+                  authType === a ? "border-brand bg-brand/10 text-brand" : "border-border text-muted hover:bg-surface-1"
                 }`}
               >
                 {a}
@@ -118,7 +118,7 @@ export default function APITool({ onBack }) {
                   value={headerKey}
                   onChange={(e) => setHeaderKey(e.target.value)}
                   placeholder="Header name (e.g. X-API-Key)"
-                  className="w-48 rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-brand"
+                  className="w-48 rounded-xl border border-border px-3 py-2 text-sm outline-none focus:border-brand/50"
                 />
               )}
               <input
@@ -126,18 +126,18 @@ export default function APITool({ onBack }) {
                 value={authValue}
                 onChange={(e) => setAuthValue(e.target.value)}
                 placeholder={authType === "Basic Auth" ? "user:password" : "Token / Key"}
-                className="flex-1 rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-brand"
+                className="flex-1 rounded-xl border border-border px-3 py-2 text-sm outline-none focus:border-brand/50"
               />
             </div>
           )}
         </div>
 
-        {error && <p className="text-sm text-red-600">{error}</p>}
+        {error && <p className="text-sm text-accent-rose">{error}</p>}
 
         <button
           onClick={fetchAPI}
           disabled={fetching || !url}
-          className="rounded-xl bg-brand px-5 py-2.5 text-sm font-medium text-white hover:bg-brand-dark disabled:opacity-50"
+          className="rounded-xl bg-brand px-5 py-2.5 text-sm font-medium text-white hover:-translate-y-0.5 disabled:opacity-50"
         >
           {fetching ? "Fetching…" : "Fetch Data"}
         </button>
@@ -145,18 +145,18 @@ export default function APITool({ onBack }) {
 
       {response && (
         <>
-          <div className="rounded-2xl border border-slate-200 bg-white p-4 space-y-2">
+          <div className="rounded-2xl border border-border bg-surface-1 p-4 space-y-2">
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-slate-700">API Response</h3>
-              <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700">200 OK</span>
+              <h3 className="text-sm font-semibold text-ink">API Response</h3>
+              <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-accent-emerald">200 OK</span>
             </div>
-            <pre className="max-h-48 overflow-y-auto rounded-xl bg-slate-50 p-3 text-xs text-slate-700">
+            <pre className="max-h-48 overflow-y-auto rounded-xl bg-surface-1 p-3 text-xs text-ink">
               {JSON.stringify(response, null, 2)}
             </pre>
           </div>
 
-          <div className="rounded-2xl border border-slate-200 bg-white p-4 space-y-3">
-            <h3 className="text-sm font-semibold text-slate-700">Ask AI about this data</h3>
+          <div className="rounded-2xl border border-border bg-surface-1 p-4 space-y-3">
+            <h3 className="text-sm font-semibold text-ink">Ask AI about this data</h3>
             <div className="flex gap-2">
               <input
                 type="text"
@@ -164,18 +164,18 @@ export default function APITool({ onBack }) {
                 onChange={(e) => setQuestion(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && analyseWithAI()}
                 placeholder="e.g. Summarize this data, find patterns, count records…"
-                className="flex-1 rounded-xl border border-slate-200 px-4 py-2.5 text-sm outline-none focus:border-brand focus:ring-2 focus:ring-brand/20"
+                className="flex-1 rounded-xl border border-border px-4 py-2.5 text-sm outline-none focus:border-brand/50 focus:ring-2 focus:ring-brand/10"
               />
               <button
                 onClick={analyseWithAI}
                 disabled={analysing || !question.trim()}
-                className="rounded-xl bg-brand px-5 py-2.5 text-sm font-medium text-white hover:bg-brand-dark disabled:opacity-50"
+                className="rounded-xl bg-brand px-5 py-2.5 text-sm font-medium text-white hover:-translate-y-0.5 disabled:opacity-50"
               >
                 {analysing ? "Analysing…" : "Analyse"}
               </button>
             </div>
             {analysis && (
-              <div className="rounded-xl bg-slate-50 border border-slate-200 p-4 text-sm text-slate-700 whitespace-pre-wrap">
+              <div className="rounded-xl bg-surface-1 border border-border p-4 text-sm text-ink whitespace-pre-wrap">
                 {analysis}
               </div>
             )}

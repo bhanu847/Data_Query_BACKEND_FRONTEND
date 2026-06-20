@@ -45,22 +45,22 @@ export default function ReportTool({ onBack }) {
   return (
     <div className="space-y-5">
       <div>
-        <button onClick={onBack} className="mb-1 text-sm text-slate-500 hover:text-slate-800">
+        <button onClick={onBack} className="mb-1 text-sm text-muted hover:text-ink">
           ← Back to Tools
         </button>
-        <h2 className="font-display text-xl font-semibold text-slate-900">Report Generator</h2>
-        <p className="text-sm text-slate-500">Generate a polished PDF report from your data in seconds.</p>
+        <h2 className="font-display text-xl font-semibold text-ink">Report Generator</h2>
+        <p className="text-sm text-muted">Generate a polished PDF report from your data in seconds.</p>
       </div>
 
-      <div className="rounded-2xl border border-slate-200 bg-white p-6 space-y-5">
+      <div className="rounded-2xl border border-border bg-surface-1 p-6 space-y-5">
         {/* Source selection */}
         <div className="space-y-2">
-          <h3 className="text-sm font-semibold text-slate-700">1. Select data source</h3>
+          <h3 className="text-sm font-semibold text-ink">1. Select data source</h3>
           {loadingSources ? (
-            <p className="text-sm text-slate-400 animate-pulse">Loading…</p>
+            <p className="text-sm text-muted-2 animate-pulse">Loading…</p>
           ) : sources.length === 0 ? (
-            <div className="rounded-xl bg-slate-50 border border-slate-200 p-4 text-center">
-              <p className="text-sm text-slate-500">No sources yet. Upload data first.</p>
+            <div className="rounded-xl bg-surface-1 border border-border p-4 text-center">
+              <p className="text-sm text-muted">No sources yet. Upload data first.</p>
             </div>
           ) : (
             <div className="grid gap-2">
@@ -70,12 +70,12 @@ export default function ReportTool({ onBack }) {
                   onClick={() => setSelectedSource(src.id)}
                   className={`flex items-center gap-3 rounded-xl border px-4 py-3 text-left text-sm transition-colors ${
                     selectedSource === src.id
-                      ? "border-brand bg-brand-soft text-brand"
-                      : "border-slate-200 hover:bg-slate-50 text-slate-700"
+                      ? "border-brand bg-brand/10 text-brand"
+                      : "border-border hover:bg-surface-1 text-ink"
                   }`}
                 >
                   <span className="font-medium">{src.name || src.filename || `Source ${src.id}`}</span>
-                  <span className="ml-auto text-xs text-slate-400">{src.type || "file"}</span>
+                  <span className="ml-auto text-xs text-muted-2">{src.type || "file"}</span>
                 </button>
               ))}
             </div>
@@ -84,7 +84,7 @@ export default function ReportTool({ onBack }) {
 
         {/* Report type */}
         <div className="space-y-2">
-          <h3 className="text-sm font-semibold text-slate-700">2. Choose report type</h3>
+          <h3 className="text-sm font-semibold text-ink">2. Choose report type</h3>
           <div className="grid grid-cols-2 gap-2">
             {REPORT_TYPES.map((rt) => (
               <button
@@ -92,14 +92,14 @@ export default function ReportTool({ onBack }) {
                 onClick={() => setReportType(rt.key)}
                 className={`rounded-xl border p-3 text-left transition-colors ${
                   reportType === rt.key
-                    ? "border-brand bg-brand-soft"
-                    : "border-slate-200 hover:bg-slate-50"
+                    ? "border-brand bg-brand/10"
+                    : "border-border hover:bg-surface-1"
                 }`}
               >
-                <p className={`text-sm font-semibold ${reportType === rt.key ? "text-brand" : "text-slate-800"}`}>
+                <p className={`text-sm font-semibold ${reportType === rt.key ? "text-brand" : "text-ink"}`}>
                   {rt.label}
                 </p>
-                <p className="mt-0.5 text-xs text-slate-500">{rt.desc}</p>
+                <p className="mt-0.5 text-xs text-muted">{rt.desc}</p>
               </button>
             ))}
           </div>
@@ -111,14 +111,14 @@ export default function ReportTool({ onBack }) {
             onChange={(e) => setCustomPrompt(e.target.value)}
             rows={3}
             placeholder="Describe what you want in the report…"
-            className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-brand focus:ring-2 focus:ring-brand/20"
+            className="w-full rounded-xl border border-border px-4 py-3 text-sm outline-none focus:border-brand/50 focus:ring-2 focus:ring-brand/10"
           />
         )}
 
-        {error && <p className="text-sm text-red-600">{error}</p>}
+        {error && <p className="text-sm text-accent-rose">{error}</p>}
 
         {done && (
-          <div className="rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-3 text-sm text-emerald-700">
+          <div className="rounded-xl bg-accent-emerald/10 border border-emerald-200 px-4 py-3 text-sm text-accent-emerald">
             ✅ Report downloaded successfully!
           </div>
         )}
@@ -126,7 +126,7 @@ export default function ReportTool({ onBack }) {
         <button
           onClick={generate}
           disabled={!selectedSource || generating}
-          className="rounded-xl bg-brand px-6 py-2.5 text-sm font-medium text-white hover:bg-brand-dark disabled:opacity-50"
+          className="rounded-xl bg-brand px-6 py-2.5 text-sm font-medium text-white hover:-translate-y-0.5 disabled:opacity-50"
         >
           {generating ? "Generating report…" : "Generate & Download PDF"}
         </button>

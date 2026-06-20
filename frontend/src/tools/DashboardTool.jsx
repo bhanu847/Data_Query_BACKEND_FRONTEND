@@ -318,31 +318,31 @@ export default function DashboardTool({ onBack }) {
         {/* Top Bar */}
         <div className="flex items-center justify-between flex-wrap gap-2">
           <div className="flex items-center gap-3">
-            <button onClick={handleBackToSelect} className="text-sm text-slate-500 hover:text-slate-800">← Back</button>
+            <button onClick={handleBackToSelect} className="text-sm text-muted hover:text-ink">← Back</button>
             <input
               type="text"
               value={dashboardName}
               onChange={(e) => setDashboardName(e.target.value)}
-              className="font-display text-xl font-semibold text-slate-900 bg-transparent border-b border-transparent hover:border-slate-300 focus:border-brand focus:outline-none px-1"
+              className="font-display text-xl font-semibold text-ink bg-transparent border-b border-transparent hover:border-border-2 focus:border-brand/50 focus:outline-none px-1"
             />
           </div>
           <div className="flex items-center gap-2 flex-wrap">
             <button onClick={() => setShowAddChart(true)}
-              className="rounded-xl bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark flex items-center gap-1.5">
+              className="rounded-xl bg-gradient-brand px-4 py-2 text-sm font-semibold text-[#050710] shadow-glow-sm hover:-translate-y-0.5 transition-transform flex items-center gap-1.5">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
               </svg>
               Add Chart
             </button>
             <button onClick={() => setShowKpiBuilder(true)}
-              className="rounded-xl bg-violet-600 px-4 py-2 text-sm font-medium text-white hover:bg-violet-700 flex items-center gap-1.5">
+              className="rounded-xl bg-accent-violet px-4 py-2 text-sm font-semibold text-white hover:brightness-110 transition-all flex items-center gap-1.5">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
               </svg>
               Add KPI
             </button>
             <button onClick={handleSave} disabled={saving}
-              className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50 flex items-center gap-1.5">
+              className="rounded-xl bg-accent-emerald px-4 py-2 text-sm font-semibold text-[#050710] hover:brightness-110 disabled:opacity-50 transition-all flex items-center gap-1.5">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
               </svg>
@@ -351,7 +351,7 @@ export default function DashboardTool({ onBack }) {
           </div>
         </div>
 
-        {error && <p className="text-sm text-red-600">{error}</p>}
+        {error && <p className="text-sm text-accent-rose">{error}</p>}
 
         {/* Filters */}
         {columns.length > 0 && (
@@ -399,17 +399,17 @@ export default function DashboardTool({ onBack }) {
     return (
       <div className="space-y-5">
         <div>
-          <button onClick={() => setMode("select")} className="mb-1 text-sm text-slate-500 hover:text-slate-800">← Back</button>
-          <h2 className="font-display text-xl font-semibold text-slate-900">Dashboard Templates</h2>
-          <p className="text-sm text-slate-500">Choose a template to auto-populate your dashboard.</p>
+          <button onClick={() => setMode("select")} className="mb-1 text-sm text-muted hover:text-ink">← Back</button>
+          <h2 className="font-display text-xl font-semibold text-ink">Dashboard Templates</h2>
+          <p className="text-sm text-muted">Choose a template to auto-populate your dashboard.</p>
         </div>
         {generating && (
-          <div className="flex items-center gap-3 rounded-xl bg-violet-50 border border-violet-200 px-4 py-3">
-            <div className="h-4 w-4 animate-spin rounded-full border-2 border-violet-400 border-t-transparent" />
-            <span className="text-sm text-violet-700">Building dashboard from template...</span>
+          <div className="flex items-center gap-3 rounded-xl bg-accent-violet/10 border border-accent-violet/25 px-4 py-3">
+            <div className="h-4 w-4 animate-spin rounded-full border-2 border-accent-violet border-t-transparent" />
+            <span className="text-sm text-accent-violet">Building dashboard from template...</span>
           </div>
         )}
-        {error && <p className="text-sm text-red-600">{error}</p>}
+        {error && <p className="text-sm text-accent-rose">{error}</p>}
         <DashboardTemplates onSelect={handleTemplate} />
       </div>
     );
@@ -419,32 +419,32 @@ export default function DashboardTool({ onBack }) {
   return (
     <div className="space-y-5">
       <div>
-        <button onClick={onBack} className="mb-1 text-sm text-slate-500 hover:text-slate-800">← Back to Tools</button>
-        <h2 className="font-display text-xl font-semibold text-slate-900">Dashboard Builder</h2>
-        <p className="text-sm text-slate-500">Create custom dashboards with full control over charts, KPIs, and layout.</p>
+        <button onClick={onBack} className="mb-1 text-sm text-muted hover:text-ink">← Back to Tools</button>
+        <h2 className="font-display text-xl font-semibold text-ink">Dashboard Builder</h2>
+        <p className="text-sm text-muted">Create custom dashboards with full control over charts, KPIs, and layout.</p>
       </div>
 
-      <div className="rounded-2xl border border-slate-200 bg-white p-6 space-y-4">
-        <h3 className="text-sm font-semibold text-slate-700">Select a data source</h3>
+      <div className="rounded-2xl border border-border bg-surface-1 p-6 space-y-4">
+        <h3 className="text-sm font-semibold text-ink">Select a data source</h3>
 
         {loadingSources ? (
-          <p className="text-sm text-slate-400 animate-pulse">Loading sources...</p>
+          <p className="text-sm text-muted-2 animate-pulse">Loading sources...</p>
         ) : sources.length === 0 ? (
-          <div className="rounded-xl bg-slate-50 border border-slate-200 p-5 text-center">
-            <p className="text-sm text-slate-500">No data sources yet.</p>
-            <p className="mt-1 text-xs text-slate-400">Upload an Excel or CSV file first using "Chat with Data".</p>
+          <div className="rounded-xl bg-surface-1 border border-border p-5 text-center">
+            <p className="text-sm text-muted">No data sources yet.</p>
+            <p className="mt-1 text-xs text-muted-2">Upload an Excel or CSV file first using "Chat with Data".</p>
           </div>
         ) : (
           <div className="grid gap-2">
             {sources.map((src) => (
               <div key={src.id} onClick={() => handleSelectSource(src.id)}
                 className={`group flex items-center gap-3 rounded-xl border px-4 py-3 text-sm cursor-pointer transition-colors ${
-                  selectedSource === src.id ? "border-brand bg-brand-soft text-brand" : "border-slate-200 hover:bg-slate-50 text-slate-700"
+                  selectedSource === src.id ? "border-brand bg-brand/10 text-brand" : "border-border hover:bg-surface-1 text-ink"
                 }`}>
                 <span className="font-medium flex-1 truncate">{src.name || `Source ${src.id}`}</span>
-                <span className="text-xs text-slate-400">{src.kind || "file"}</span>
+                <span className="text-xs text-muted-2">{src.kind || "file"}</span>
                 <button onClick={(e) => { e.stopPropagation(); deleteSource(src.id).then(() => setSources((prev) => prev.filter((s) => s.id !== src.id))); }}
-                  className="shrink-0 rounded p-1 text-slate-300 opacity-0 group-hover:opacity-100 hover:bg-red-50 hover:text-red-500 transition-all" title="Delete source">
+                  className="shrink-0 rounded p-1 text-muted-2 opacity-0 group-hover:opacity-100 hover:bg-accent-rose/10 hover:text-accent-rose transition-all" title="Delete source">
                   <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
@@ -454,12 +454,12 @@ export default function DashboardTool({ onBack }) {
           </div>
         )}
 
-        {error && <p className="text-sm text-red-600">{error}</p>}
+        {error && <p className="text-sm text-accent-rose">{error}</p>}
 
         {selectedSource && (
           <div className="flex flex-wrap gap-2 pt-2">
             <button onClick={generateAuto} disabled={generating}
-              className="rounded-xl bg-brand px-5 py-2.5 text-sm font-medium text-white hover:bg-brand-dark disabled:opacity-50">
+              className="rounded-xl bg-brand px-5 py-2.5 text-sm font-medium text-white hover:-translate-y-0.5 disabled:opacity-50">
               {generating ? "Generating..." : "AI Auto Dashboard"}
             </button>
             <button onClick={() => setMode("template")} disabled={generating}
@@ -467,20 +467,20 @@ export default function DashboardTool({ onBack }) {
               Use Template
             </button>
             <button onClick={() => { setCharts([]); setKpis([]); setLayout([]); setMode("builder"); }} disabled={generating}
-              className="rounded-xl bg-slate-800 px-5 py-2.5 text-sm font-medium text-white hover:bg-slate-700 disabled:opacity-50">
+              className="rounded-xl bg-surface-2 border border-border px-5 py-2.5 text-sm font-medium text-white hover:bg-surface-3 disabled:opacity-50">
               Blank Dashboard
             </button>
             <button onClick={loadSavedDashboards}
-              className="rounded-xl border border-slate-200 px-5 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50">
+              className="rounded-xl border border-border px-5 py-2.5 text-sm font-medium text-ink hover:bg-surface-1">
               Load Saved
             </button>
           </div>
         )}
 
         {generating && (
-          <div className="flex items-center gap-3 rounded-xl bg-violet-50 border border-violet-200 px-4 py-3">
-            <div className="h-4 w-4 animate-spin rounded-full border-2 border-violet-400 border-t-transparent" />
-            <span className="text-sm text-violet-700">AI is analyzing your data and building charts...</span>
+          <div className="flex items-center gap-3 rounded-xl bg-accent-violet/10 border border-accent-violet/25 px-4 py-3">
+            <div className="h-4 w-4 animate-spin rounded-full border-2 border-accent-violet border-t-transparent" />
+            <span className="text-sm text-accent-violet">AI is analyzing your data and building charts...</span>
           </div>
         )}
       </div>
@@ -488,10 +488,10 @@ export default function DashboardTool({ onBack }) {
       {/* Saved dashboards modal */}
       {showSavedList && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="w-full max-w-lg max-h-[70vh] overflow-y-auto rounded-2xl bg-white shadow-xl">
-            <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
-              <h3 className="font-display text-lg font-semibold text-slate-900">Saved Dashboards</h3>
-              <button onClick={() => setShowSavedList(false)} className="rounded-lg p-1 hover:bg-slate-100 text-slate-400">
+          <div className="w-full max-w-lg max-h-[70vh] overflow-y-auto rounded-2xl bg-surface-1 shadow-xl">
+            <div className="flex items-center justify-between border-b border-border px-6 py-4">
+              <h3 className="font-display text-lg font-semibold text-ink">Saved Dashboards</h3>
+              <button onClick={() => setShowSavedList(false)} className="rounded-lg p-1 hover:bg-surface-2 text-muted-2">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
@@ -499,16 +499,16 @@ export default function DashboardTool({ onBack }) {
             </div>
             <div className="px-6 py-4 space-y-2">
               {savedDashboards.length === 0 ? (
-                <p className="text-sm text-slate-400 text-center py-4">No saved dashboards yet.</p>
+                <p className="text-sm text-muted-2 text-center py-4">No saved dashboards yet.</p>
               ) : savedDashboards.map((db) => (
                 <div key={db.id} onClick={() => handleLoadDashboard(db)}
-                  className="group flex items-center gap-3 rounded-xl border border-slate-200 px-4 py-3 cursor-pointer hover:bg-slate-50 transition-colors">
+                  className="group flex items-center gap-3 rounded-xl border border-border px-4 py-3 cursor-pointer hover:bg-surface-1 transition-colors">
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-slate-700 truncate">{db.name}</p>
-                    <p className="text-xs text-slate-400">{new Date(db.updated_at).toLocaleDateString()}</p>
+                    <p className="text-sm font-medium text-ink truncate">{db.name}</p>
+                    <p className="text-xs text-muted-2">{new Date(db.updated_at).toLocaleDateString()}</p>
                   </div>
                   <button onClick={(e) => handleDeleteDashboard(db.id, e)}
-                    className="shrink-0 rounded p-1 text-slate-300 opacity-0 group-hover:opacity-100 hover:bg-red-50 hover:text-red-500 transition-all">
+                    className="shrink-0 rounded p-1 text-muted-2 opacity-0 group-hover:opacity-100 hover:bg-accent-rose/10 hover:text-accent-rose transition-all">
                     <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                     </svg>

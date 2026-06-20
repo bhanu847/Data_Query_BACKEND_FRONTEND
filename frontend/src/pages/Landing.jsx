@@ -1,97 +1,12 @@
-// import { useNavigate } from "react-router-dom";
-// import { motion } from "framer-motion";
-// import Navbar from "../components/Navbar";
-// import ToolCard from "../components/ToolCard";
-// import { useAuth } from "../contexts/AuthContext";
-
-// const TOOLS = [
-//   { icon: "PDF", title: "Chat with PDF", description: "Upload a PDF and ask questions about the document.", badge: "Soon" },
-//   { icon: "XLS", title: "Chat with Excel", description: "Ask questions from Excel and CSV files in plain English." },
-//   { icon: "SQL", title: "SQL Analytics", description: "Connect a database and query it with AI.", badge: "Soon" },
-//   { icon: "AI", title: "AI Dashboard Generator", description: "Turn any dataset into a dashboard automatically." },
-//   { icon: "API", title: "API Analytics", description: "Connect any REST API and analyze the data.", badge: "Soon" },
-//   { icon: "PDF", title: "Report Generator", description: "Generate a polished PDF report from your data." },
-//   { icon: "FIX", title: "Data Cleaning", description: "Detect and fix messy data automatically.", badge: "Soon" },
-//   { icon: "OUT", title: "Export Center", description: "Export results to CSV, Excel and PDF." },
-// ];
-
-// export default function Landing() {
-//   const navigate = useNavigate();
-//   const { user } = useAuth();
-//   const go = () => navigate(user ? "/app" : "/signup");
-
-//   return (
-//     <div className="min-h-screen bg-white">
-//       <Navbar />
-
-//       <section className="hero-grid border-b border-slate-200">
-//         <div className="mx-auto max-w-4xl px-5 py-20 text-center">
-//           <motion.h1
-//             initial={{ opacity: 0, y: 16 }}
-//             animate={{ opacity: 1, y: 0 }}
-//             transition={{ duration: 0.5 }}
-//             className="font-display text-4xl font-bold tracking-tight text-ink sm:text-6xl"
-//           >
-//             Ask Your Data Anything
-//           </motion.h1>
-//           <motion.p
-//             initial={{ opacity: 0, y: 16 }}
-//             animate={{ opacity: 1, y: 0 }}
-//             transition={{ duration: 0.5, delay: 0.1 }}
-//             className="mx-auto mt-5 max-w-2xl text-lg text-slate-500"
-//           >
-//             Connect Excel, PDF, SQL, APIs and databases. Use AI to generate
-//             dashboards, insights and reports instantly.
-//           </motion.p>
-//           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-//             <button
-//               onClick={go}
-//               className="rounded-xl bg-brand px-6 py-3 font-medium text-white shadow-card hover:bg-brand-dark"
-//             >
-//               Upload File
-//             </button>
-//             <button
-//               onClick={go}
-//               className="rounded-xl border border-slate-200 bg-white px-6 py-3 font-medium hover:bg-slate-50"
-//             >
-//               Connect Database
-//             </button>
-//           </div>
-//         </div>
-//       </section>
-
-//       <section className="mx-auto max-w-7xl px-5 py-16">
-//         <h2 className="mb-2 font-display text-2xl font-semibold">Tools</h2>
-//         <p className="mb-8 text-slate-500">Pick a tool to start working with your data.</p>
-//         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-//           {TOOLS.map((tool) => (
-//             <ToolCard key={tool.title} {...tool} onClick={go} />
-//           ))}
-//         </div>
-//       </section>
-
-//       <footer className="border-t border-slate-200 py-8 text-center text-sm text-slate-400">
-//         DataQuery AI - built with FastAPI + React.
-//       </footer>
-//     </div>
-//   );
-// }
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import Navbar from "../components/Navbar";
-import ToolCard from "../components/ToolCard";
 import { useAuth } from "../contexts/AuthContext";
 
-// All tools are now active — no "Soon" badges
-const TOOLS = [
-  { icon: "PDF", title: "Chat with PDF", description: "Upload a PDF and ask questions about the document." },
-  { icon: "XLS", title: "Chat with Excel", description: "Ask questions from Excel and CSV files in plain English." },
-  { icon: "SQL", title: "SQL Analytics", description: "Connect a database and query it with AI." },
-  { icon: "AI", title: "AI Dashboard Generator", description: "Turn any dataset into a dashboard automatically." },
-  { icon: "API", title: "API Analytics", description: "Connect any REST API and analyze the data." },
-  { icon: "PDF", title: "Report Generator", description: "Generate a polished PDF report from your data." },
-  { icon: "FIX", title: "Data Cleaning", description: "Detect and fix messy data automatically." },
-  { icon: "OUT", title: "Export Center", description: "Export results to CSV, Excel and PDF." },
+const STATS = [
+  { value: "30+", label: "file & DB formats" },
+  { value: "<5s", label: "to first insight" },
+  { value: "0", label: "SQL required" },
 ];
 
 export default function Landing() {
@@ -100,58 +15,86 @@ export default function Landing() {
   const go = () => navigate(user ? "/app" : "/signup");
 
   return (
-    <div className="min-h-screen bg-white">
-      <Navbar />
+    <div className="relative min-h-screen overflow-hidden">
+      {/* Animated background */}
+      <div className="bg-scene">
+        <div className="orb-a" />
+        <div className="orb-b" />
+        <div className="orb-c" />
+        <div className="grid-overlay" />
+        <div className="vignette" />
+      </div>
 
-      <section className="hero-grid border-b border-slate-200">
-        <div className="mx-auto max-w-4xl px-5 py-20 text-center">
-          <motion.h1
+      <div className="relative z-10 min-h-screen flex flex-col">
+        <Navbar />
+
+        <main className="flex-1 flex flex-col items-center justify-center text-center px-6 pb-20 max-w-[920px] mx-auto">
+          {/* Badge */}
+          <motion.div
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
-            className="font-display text-4xl font-bold tracking-tight text-ink sm:text-6xl"
+            className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-brand/[0.08] border border-brand/[0.22] text-[13px] font-medium text-[#7DE7F5] mb-8"
           >
-            Ask Your Data Anything
+            <span className="h-[7px] w-[7px] rounded-full bg-brand shadow-[0_0_10px_#22D3EE] animate-pulse" />
+            AI-native analytics workspace
+          </motion.div>
+
+          {/* Headline */}
+          <motion.h1
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.05 }}
+            className="font-display text-5xl sm:text-[68px] font-bold leading-[1.02] tracking-tight mb-6"
+          >
+            Ask your data<br />
+            <span className="bg-gradient-to-r from-brand via-accent-indigo to-accent-emerald bg-clip-text text-transparent">
+              anything.
+            </span>
           </motion.h1>
+
+          {/* Subtitle */}
           <motion.p
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.1 }}
-            className="mx-auto mt-5 max-w-2xl text-lg text-slate-500"
+            className="text-lg leading-relaxed text-muted max-w-[600px] mb-10"
           >
-            Connect Excel, PDF, SQL, APIs and databases. Use AI to generate
-            dashboards, insights and reports instantly.
+            Upload Excel, CSV, PDF or connect SQL, MongoDB and APIs.
+            Chat with your data in plain English and turn it into dashboards,
+            insights and reports — instantly.
           </motion.p>
-          <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+
+          {/* CTA */}
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.15 }}
+          >
             <button
               onClick={go}
-              className="rounded-xl bg-brand px-6 py-3 font-medium text-white shadow-card hover:bg-brand-dark"
+              className="inline-flex items-center gap-2 rounded-xl bg-gradient-brand px-7 py-4 text-[15px] font-semibold text-[#050710] shadow-glow hover:shadow-[0_10px_38px_rgba(34,211,238,0.5)] hover:-translate-y-0.5 transition-all"
             >
-              Upload File
+              Get Started Free
             </button>
-            <button
-              onClick={go}
-              className="rounded-xl border border-slate-200 bg-white px-6 py-3 font-medium hover:bg-slate-50"
-            >
-              Connect Database
-            </button>
-          </div>
-        </div>
-      </section>
+          </motion.div>
 
-      <section className="mx-auto max-w-7xl px-5 py-16">
-        <h2 className="mb-2 font-display text-2xl font-semibold">Tools</h2>
-        <p className="mb-8 text-slate-500">Pick a tool to start working with your data.</p>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {TOOLS.map((tool) => (
-            <ToolCard key={tool.title} {...tool} onClick={go} />
-          ))}
-        </div>
-      </section>
-
-      <footer className="border-t border-slate-200 py-8 text-center text-sm text-slate-400">
-        DataQuery AI — built with FastAPI + React.
-      </footer>
+          {/* Stats */}
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.4 }}
+            className="flex gap-8 flex-wrap justify-center mt-14"
+          >
+            {STATS.map((s) => (
+              <div key={s.label} className="text-center">
+                <div className="font-display text-2xl font-bold text-ink">{s.value}</div>
+                <div className="text-[13px] text-muted-2 mt-0.5">{s.label}</div>
+              </div>
+            ))}
+          </motion.div>
+        </main>
+      </div>
     </div>
   );
 }

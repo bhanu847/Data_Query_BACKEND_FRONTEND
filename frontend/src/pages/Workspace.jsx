@@ -19,7 +19,6 @@ import ReportsView from "../views/ReportsView";
 export default function Workspace() {
   const [section, setSection] = useState("sources");
   const [activeTool, setActiveTool] = useState(null);
-  // When opening a tool from history, pass the chat context
   const [chatContext, setChatContext] = useState(null);
 
   const handleSelectSection = useCallback((key) => {
@@ -44,40 +43,48 @@ export default function Workspace() {
     let tool = "excel";
     if (kind === "pdf") tool = "pdf";
     else if (kind === "mongodb") tool = "mongodb";
-
     setChatContext(ctx);
     setActiveTool(tool);
     setSection("sources");
   }, []);
 
-  if (activeTool) {
-    return (
-      <div className="flex h-screen flex-col overflow-hidden">
-        <Navbar />
-        <div className="flex flex-1 overflow-hidden">
-          <Sidebar active="sources" onSelect={handleSelectSection} />
-          <main className="flex-1 overflow-y-auto p-6">
-            <ActiveTool toolKey={activeTool} onBack={handleBackFromTool} chatContext={chatContext} />
-          </main>
-        </div>
-      </div>
-    );
-  }
+  const handleNewAnalysis = useCallback(() => {
+    setActiveTool("excel");
+    setChatContext(null);
+    setSection("sources");
+  }, []);
 
+  const currentSection = activeTool ? "sources" : section;
   const SectionComponent = SECTION_MAP[section] || SourcesView;
   const sectionProps = { onOpenTool: handleOpenTool };
-  if (section === "history") {
-    sectionProps.onOpenChat = handleOpenChat;
-  }
+  if (section === "history") sectionProps.onOpenChat = handleOpenChat;
 
   return (
-    <div className="flex h-screen flex-col overflow-hidden">
-      <Navbar />
-      <div className="flex flex-1 overflow-hidden">
-        <Sidebar active={section} onSelect={handleSelectSection} />
-        <main className="flex-1 overflow-y-auto p-6">
-          <SectionComponent {...sectionProps} />
-        </main>
+    <div className="relative flex h-screen flex-col overflow-hidden">
+      <div className="bg-scene">
+        <div className="orb-a" />
+        <div className="orb-b" />
+        <div className="orb-c" />
+        <div className="grid-overlay" />
+        <div className="vignette" />
+      </div>
+
+      <div className="relative z-10 flex h-screen flex-col overflow-hidden">
+        <Navbar />
+        <div className="flex flex-1 overflow-hidden">
+          <Sidebar
+            active={currentSection}
+            onSelect={handleSelectSection}
+            onNewAnalysis={handleNewAnalysis}
+          />
+          <main className="flex-1 overflow-y-auto p-8" style={{ maxHeight: "calc(100vh - 57px)" }}>
+            {activeTool ? (
+              <ActiveTool toolKey={activeTool} onBack={handleBackFromTool} chatContext={chatContext} />
+            ) : (
+              <SectionComponent {...sectionProps} />
+            )}
+          </main>
+        </div>
       </div>
     </div>
   );
@@ -104,6 +111,6 @@ function ActiveTool({ toolKey, onBack, chatContext }) {
     export: ExportTool,
   };
   const Tool = tools[toolKey];
-  if (!Tool) return <div className="text-slate-400">Unknown tool: {toolKey}</div>;
+  if (!Tool) return <div className="text-muted">Unknown tool: {toolKey}</div>;
   return <Tool onBack={onBack} chatContext={chatContext} />;
 }

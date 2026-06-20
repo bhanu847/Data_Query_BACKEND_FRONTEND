@@ -4,7 +4,7 @@ const TEMPLATES = [
     label: "Blank Dashboard",
     description: "Start from scratch with a clean canvas.",
     icon: "☐",
-    color: "bg-slate-50 text-slate-600",
+    color: "bg-surface-1 text-muted",
     config: { charts: [], kpis: [], layout: [] },
   },
   {
@@ -12,7 +12,7 @@ const TEMPLATES = [
     label: "Sales Dashboard",
     description: "Revenue trends, top products, region performance.",
     icon: "💰",
-    color: "bg-emerald-50 text-emerald-700",
+    color: "bg-accent-emerald/10 text-accent-emerald",
     config: {
       charts: [
         { chart_type: "line", title: "Revenue Trend", auto_x: "datetime", auto_y: "first_numeric", aggregation: "sum" },
@@ -33,7 +33,7 @@ const TEMPLATES = [
     label: "Finance Dashboard",
     description: "Financial KPIs, trends, and distributions.",
     icon: "📊",
-    color: "bg-blue-50 text-blue-700",
+    color: "bg-brand/10 text-brand",
     config: {
       charts: [
         { chart_type: "area", title: "Financial Trend", auto_x: "datetime", auto_y: "first_numeric", aggregation: "sum" },
@@ -54,7 +54,7 @@ const TEMPLATES = [
     label: "Inventory Dashboard",
     description: "Stock levels, categories, and trends.",
     icon: "📦",
-    color: "bg-amber-50 text-amber-700",
+    color: "bg-accent-amber/10 text-accent-amber",
     config: {
       charts: [
         { chart_type: "bar", title: "Stock by Category", auto_x: "first_categorical", auto_y: "first_numeric", aggregation: "sum", sort_order: "descending" },
@@ -75,7 +75,7 @@ const TEMPLATES = [
     label: "Healthcare Dashboard",
     description: "Patient data, distributions, and correlations.",
     icon: "🏥",
-    color: "bg-red-50 text-red-700",
+    color: "bg-accent-rose/10 text-accent-rose",
     config: {
       charts: [
         { chart_type: "bar", title: "Category Breakdown", auto_x: "first_categorical", auto_y: "first_numeric", aggregation: "count" },
@@ -96,7 +96,7 @@ const TEMPLATES = [
     label: "Marketing Dashboard",
     description: "Campaign performance, funnel, and channels.",
     icon: "📢",
-    color: "bg-violet-50 text-violet-700",
+    color: "bg-accent-violet/10 text-accent-violet",
     config: {
       charts: [
         { chart_type: "funnel", title: "Conversion Funnel", auto_x: "first_categorical", auto_y: "first_numeric", aggregation: "sum" },
@@ -117,16 +117,16 @@ const TEMPLATES = [
 export default function DashboardTemplates({ onSelect }) {
   return (
     <div className="space-y-4">
-      <p className="text-sm font-medium text-slate-600">Choose a Template</p>
+      <p className="text-sm font-medium text-muted">Choose a Template</p>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
         {TEMPLATES.map((t) => (
           <button key={t.key} onClick={() => onSelect(t)}
-            className="group flex flex-col items-center gap-2 rounded-xl border border-slate-200 p-4 text-center transition-all hover:border-brand/40 hover:shadow-md">
+            className="group flex flex-col items-center gap-2 rounded-xl border border-border p-4 text-center transition-all hover:border-brand/40 hover:shadow-md">
             <span className={`flex h-12 w-12 items-center justify-center rounded-xl text-xl ${t.color}`}>
               {t.icon}
             </span>
-            <span className="text-sm font-semibold text-slate-800">{t.label}</span>
-            <span className="text-xs text-slate-400 leading-relaxed">{t.description}</span>
+            <span className="text-sm font-semibold text-ink">{t.label}</span>
+            <span className="text-xs text-muted-2 leading-relaxed">{t.description}</span>
           </button>
         ))}
       </div>
