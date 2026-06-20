@@ -210,4 +210,21 @@ export const exportCSV = (id, name = "export.csv") => download("/export/csv", id
 export const exportExcel = (id, name = "export.xlsx") => download("/export/excel", id, name);
 export const exportPDF = (id, name = "export.pdf") => download("/export/pdf", id, name);
 
+export async function generateReportBlob(source_id) {
+  const res = await api.post("/export/report", { source_id }, { responseType: "blob" });
+  return res.data;
+}
+
+export function downloadBlob(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.style.display = "none";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
 export default api;

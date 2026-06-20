@@ -1,8 +1,8 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { uploadPDF, askPDF, downloadAsExcel, downloadAsPDF, downloadAsJSON } from "../services/api";
 import AutoChart from "../charts/AutoChart";
 
-export default function PDFTool({ onBack }) {
+export default function PDFTool({ onBack, chatContext }) {
   const [file, setFile] = useState(null);
   const [sourceId, setSourceId] = useState(null);
   const [uploading, setUploading] = useState(false);
@@ -12,6 +12,18 @@ export default function PDFTool({ onBack }) {
   const [asking, setAsking] = useState(false);
   const fileRef = useRef();
   const bottomRef = useRef();
+
+  useEffect(() => {
+    if (chatContext && chatContext.sourceId) {
+      setSourceId(chatContext.sourceId);
+      setFile({ name: chatContext.sourceName || "PDF document" });
+      setMessages([{
+        role: "assistant",
+        type: "info",
+        answer: chatContext.info || `Resumed chat with "${chatContext.sourceName || "PDF document"}". Ask me anything!`,
+      }]);
+    }
+  }, [chatContext]);
 
   const handleFile = async (f) => {
     if (!f) return;

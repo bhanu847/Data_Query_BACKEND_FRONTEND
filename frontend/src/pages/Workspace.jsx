@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import Navbar from "../components/Navbar";
 import Sidebar from "../components/Sidebar";
 import ExcelTool from "../tools/ExcelTool";
@@ -15,11 +15,21 @@ import SettingsView from "../views/SettingsView";
 import SourcesView from "../views/SourcesView";
 import DashboardsView from "../views/DashboardsView";
 import ReportsView from "../views/ReportsView";
+import { listSources, uploadAny } from "../services/api";
 
 export default function Workspace() {
   const [section, setSection] = useState("sources");
   const [activeTool, setActiveTool] = useState(null);
   const [chatContext, setChatContext] = useState(null);
+  const [sourceCount, setSourceCount] = useState(0);
+
+  const refreshSourceCount = useCallback(() => {
+    listSources()
+      .then((srcs) => setSourceCount(srcs.length))
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => { refreshSourceCount(); }, [refreshSourceCount]);
 
   const handleSelectSection = useCallback((key) => {
     setSection(key);
@@ -48,11 +58,28 @@ export default function Workspace() {
     setSection("sources");
   }, []);
 
-  const handleNewAnalysis = useCallback(() => {
-    setActiveTool("excel");
+  const handleNewAnalysis = useCallback((toolKey) => {
+    setActiveTool(toolKey || "excel");
     setChatContext(null);
     setSection("sources");
   }, []);
+
+  const handleUploadFile = useCallback(async (file) => {
+    const res = await uploadAny(file);
+    refreshSourceCount();
+    const id = res.source_id || res.id;
+    const cols = res.columns || [];
+    const rowCount = res.source?.row_count || res.preview?.length || 0;
+    const ext = file.name.split(".").pop().toLowerCase();
+    const tool = ext === "pdf" ? "pdf" : "excel";
+    setChatContext({
+      sourceId: id,
+      sourceName: file.name,
+      info: `"${file.name}" uploaded successfully!\n\nRows: ${rowCount.toLocaleString()} | Columns: ${cols.length}\nColumns: ${cols.join(", ")}\n\nAsk me anything about this data!`,
+    });
+    setActiveTool(tool);
+    setSection("sources");
+  }, [refreshSourceCount]);
 
   const currentSection = activeTool ? "sources" : section;
   const SectionComponent = SECTION_MAP[section] || SourcesView;
@@ -70,12 +97,13 @@ export default function Workspace() {
       </div>
 
       <div className="relative z-10 flex h-screen flex-col overflow-hidden">
-        <Navbar />
+        <Navbar onUploadFile={handleUploadFile} />
         <div className="flex flex-1 overflow-hidden">
           <Sidebar
             active={currentSection}
             onSelect={handleSelectSection}
             onNewAnalysis={handleNewAnalysis}
+            sourceCount={sourceCount}
           />
           <main className="flex-1 overflow-y-auto p-8" style={{ maxHeight: "calc(100vh - 57px)" }}>
             {activeTool ? (

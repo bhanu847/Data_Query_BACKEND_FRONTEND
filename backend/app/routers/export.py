@@ -16,6 +16,7 @@ from app.services.exporter import (
     to_excel_bytes,
     to_pdf_bytes,
 )
+from app.services.report_engine import generate_report_pdf
 
 router = APIRouter(prefix="/export", tags=["export"])
 
@@ -108,4 +109,20 @@ def export_pdf(
         io.BytesIO(to_pdf_bytes(f"{name} Report", df)),
         media_type="application/pdf",
         headers={"Content-Disposition": f'attachment; filename="{name}.pdf"'},
+    )
+
+
+@router.post("/report")
+def export_report(
+    payload: ExportRequest,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    df = _frame(db, payload, user)
+    name = _name(db, payload.source_id)
+    pdf_bytes = generate_report_pdf(df, dataset_name=name)
+    return StreamingResponse(
+        io.BytesIO(pdf_bytes),
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{name}_report.pdf"'},
     )

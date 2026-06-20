@@ -1,9 +1,26 @@
+import { useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 
-export default function Navbar() {
+export default function Navbar({ onUploadFile }) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const fileRef = useRef();
+  const [uploading, setUploading] = useState(false);
+
+  const handleFileChange = async (e) => {
+    const file = e.target.files[0];
+    if (!file || !onUploadFile) return;
+    setUploading(true);
+    try {
+      await onUploadFile(file);
+    } catch {
+      /* tool will show its own error */
+    } finally {
+      setUploading(false);
+      e.target.value = "";
+    }
+  };
 
   return (
     <header className="sticky top-0 z-30 border-b border-border bg-[rgba(8,11,20,0.55)] backdrop-blur-xl">
@@ -27,12 +44,27 @@ export default function Navbar() {
         <nav className="flex items-center gap-3 text-sm">
           {user ? (
             <>
-              <Link
-                to="/app"
-                className="hidden sm:inline-flex items-center gap-1.5 rounded-[10px] bg-gradient-brand px-4 py-2 text-[13.5px] font-semibold text-[#050710] shadow-glow-sm hover:-translate-y-0.5 transition-transform"
+              <button
+                onClick={() => fileRef.current?.click()}
+                disabled={uploading}
+                className="hidden sm:inline-flex items-center gap-1.5 rounded-[10px] bg-gradient-brand px-4 py-2 text-[13.5px] font-semibold text-[#050710] shadow-glow-sm hover:-translate-y-0.5 transition-transform disabled:opacity-60"
               >
-                &#xFF0B; Upload data
-              </Link>
+                {uploading ? (
+                  <span className="inline-flex items-center gap-1.5">
+                    <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-[#050710]/30 border-t-[#050710]" />
+                    Uploading…
+                  </span>
+                ) : (
+                  <>&#xFF0B; Upload data</>
+                )}
+              </button>
+              <input
+                ref={fileRef}
+                type="file"
+                accept=".csv,.xlsx,.xls,.json,.jsonl,.tsv,.parquet,.xml,.pdf,.docx,.txt,.html"
+                className="hidden"
+                onChange={handleFileChange}
+              />
               <div className="flex h-[34px] w-[34px] items-center justify-center rounded-full bg-gradient-to-br from-accent-emerald to-brand text-[13px] font-bold text-[#050710]">
                 {user.email?.slice(0, 2).toUpperCase() || "U"}
               </div>

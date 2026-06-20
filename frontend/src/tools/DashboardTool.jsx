@@ -26,6 +26,7 @@ export default function DashboardTool({ onBack }) {
   const [filters, setFilters] = useState({});
   const [dashboardName, setDashboardName] = useState("My Dashboard");
   const [dashboardId, setDashboardId] = useState(null);
+  const [insights, setInsights] = useState([]);
 
   // Modals
   const [showAddChart, setShowAddChart] = useState(false);
@@ -79,6 +80,7 @@ export default function DashboardTool({ onBack }) {
       setCharts(autoCharts);
       setKpis(autoKpis);
       setLayout([]);
+      setInsights(res.insights || []);
       setDashboardName(`${res.title || "AI Dashboard"}`);
       setMode("builder");
     } catch (e) {
@@ -308,6 +310,7 @@ export default function DashboardTool({ onBack }) {
     setKpis([]);
     setLayout([]);
     setFilters({});
+    setInsights([]);
     setDashboardId(null);
   };
 
@@ -368,6 +371,7 @@ export default function DashboardTool({ onBack }) {
           onDuplicateChart={handleDuplicateChart}
           onDeleteChart={handleDeleteChart}
           onDeleteKpi={handleDeleteKpi}
+          insights={insights}
         />
 
         {/* Modals */}

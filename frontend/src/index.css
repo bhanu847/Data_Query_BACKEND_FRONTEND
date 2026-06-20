@@ -19,6 +19,8 @@ body { @apply bg-surface text-ink font-sans antialiased; }
 .animate-fade-up { animation: fadeUp .6s cubic-bezier(.2,.7,.3,1) both; }
 .animate-fade-in { animation: fadeIn .5s cubic-bezier(.2,.7,.3,1) both; }
 .animate-rise-up { animation: riseUp .5s cubic-bezier(.2,.7,.3,1) both; }
+@keyframes slideIn { from{opacity:0;transform:translateX(12px)} to{opacity:1;transform:translateX(0)} }
+.animate-slide-in { animation: slideIn .4s cubic-bezier(.2,.7,.3,1) both; }
 
 /* Background scene */
 .bg-scene {
@@ -66,6 +68,18 @@ body { @apply bg-surface text-ink font-sans antialiased; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: rgba(255,255,255,.10); border-radius: 8px; border: 2px solid transparent; background-clip: padding-box; }
 ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,.18); background-clip: padding-box; }
+
+/* Dark select/option fix — browser renders options with their own bg */
+select, select option {
+  background-color: #0f1629;
+  color: #E8EDF7;
+}
+select option:checked {
+  background-color: rgba(34, 211, 238, 0.15);
+}
+input, textarea {
+  color-scheme: dark;
+}
 
 /* Dashboard grid layout */
 .dashboard-grid .react-grid-item {

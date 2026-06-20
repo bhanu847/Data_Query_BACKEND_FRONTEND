@@ -13,7 +13,6 @@ export default function ExcelTool({ onBack, chatContext }) {
   const fileRef = useRef();
   const bottomRef = useRef();
 
-  // Open from history: pre-load source and replay conversation
   useEffect(() => {
     if (chatContext && chatContext.sourceId) {
       setSourceId(chatContext.sourceId);
@@ -22,7 +21,7 @@ export default function ExcelTool({ onBack, chatContext }) {
         {
           role: "assistant",
           type: "info",
-          answer: `Resumed chat with "${chatContext.sourceName || "Data source"}". Ask me anything!`,
+          answer: chatContext.info || `Resumed chat with "${chatContext.sourceName || "Data source"}". Ask me anything!`,
         },
       ];
       if (chatContext.question) {
