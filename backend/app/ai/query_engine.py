@@ -149,7 +149,16 @@ def _date_cols(df: pd.DataFrame) -> list[str]:
 
 def _categorical_cols(df: pd.DataFrame) -> list[str]:
     excluded = set(_numeric_cols(df) + _date_cols(df))
-    return [c for c in df.columns if c not in excluded and df[c].nunique() <= 200]
+    result = []
+    for c in df.columns:
+        if c in excluded:
+            continue
+        try:
+            if df[c].nunique() <= 200:
+                result.append(c)
+        except TypeError:
+            pass
+    return result
 
 
 def _boolean_cols(df: pd.DataFrame) -> list[str]:
@@ -187,6 +196,13 @@ def _format_number(val: Any) -> str:
 def _normalize_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     normalized = df.copy()
     normalized.columns = [str(c).strip() for c in normalized.columns]
+
+    # Convert columns containing unhashable types (lists, dicts) to strings
+    for col in normalized.columns:
+        if normalized[col].dtype == "object":
+            sample = normalized[col].dropna().head(50)
+            if sample.apply(lambda x: isinstance(x, (list, dict, set))).any():
+                normalized[col] = normalized[col].apply(lambda x: str(x) if isinstance(x, (list, dict, set)) else x)
 
     for col in normalized.columns:
         if normalized[col].dtype == "object":
@@ -775,8 +791,12 @@ def _execute_intent(df: pd.DataFrame, intent: dict) -> dict[str, Any]:
         if categorical:
             parts.append("\nCategories:")
             for col in categorical[:4]:
-                top_val = df[col].value_counts().index[0] if not df[col].value_counts().empty else "N/A"
-                parts.append(f"  • {col}: {df[col].nunique()} unique values (top: {top_val})")
+                try:
+                    vc = df[col].value_counts()
+                    top_val = vc.index[0] if not vc.empty else "N/A"
+                    parts.append(f"  • {col}: {df[col].nunique()} unique values (top: {top_val})")
+                except TypeError:
+                    parts.append(f"  • {col}: mixed data")
 
         if date:
             for d in date[:1]:
@@ -785,13 +805,21 @@ def _execute_intent(df: pd.DataFrame, intent: dict) -> dict[str, Any]:
         # Build a clean summary table instead of describe()
         summary_rows = []
         for col in df.columns:
-            row = {"Column": col, "Type": str(df[col].dtype), "Non-Null": int(df[col].notna().sum()), "Unique": int(df[col].nunique())}
+            try:
+                unique_count = int(df[col].nunique())
+            except TypeError:
+                unique_count = 0
+            row = {"Column": col, "Type": str(df[col].dtype), "Non-Null": int(df[col].notna().sum()), "Unique": unique_count}
             if pd.api.types.is_numeric_dtype(df[col]):
                 row["Min"] = _format_number(df[col].min())
                 row["Max"] = _format_number(df[col].max())
                 row["Mean"] = _format_number(df[col].mean())
             else:
-                top = df[col].value_counts().index[0] if not df[col].value_counts().empty else ""
+                try:
+                    vc = df[col].value_counts()
+                    top = vc.index[0] if not vc.empty else ""
+                except TypeError:
+                    top = ""
                 row["Min"] = ""
                 row["Max"] = ""
                 row["Mean"] = str(top)[:30]

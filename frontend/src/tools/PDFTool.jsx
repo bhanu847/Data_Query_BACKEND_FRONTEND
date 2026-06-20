@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { uploadPDF, askPDF, downloadAsExcel, downloadAsPDF, downloadAsJSON } from "../services/api";
+import { uploadPDF, askPDF, listSources, deleteSource, downloadAsExcel, downloadAsPDF, downloadAsJSON } from "../services/api";
 import AutoChart from "../charts/AutoChart";
 
 export default function PDFTool({ onBack, chatContext }) {
@@ -13,6 +13,18 @@ export default function PDFTool({ onBack, chatContext }) {
   const fileRef = useRef();
   const bottomRef = useRef();
 
+  // existing sources
+  const [sources, setSources] = useState([]);
+  const [loadingSources, setLoadingSources] = useState(true);
+  const [deleting, setDeleting] = useState(null);
+
+  useEffect(() => {
+    listSources()
+      .then(setSources)
+      .catch(() => [])
+      .finally(() => setLoadingSources(false));
+  }, []);
+
   useEffect(() => {
     if (chatContext && chatContext.sourceId) {
       setSourceId(chatContext.sourceId);
@@ -24,6 +36,30 @@ export default function PDFTool({ onBack, chatContext }) {
       }]);
     }
   }, [chatContext]);
+
+  const handleSelectSource = (src) => {
+    setSourceId(src.id);
+    setFile({ name: src.name || `Source ${src.id}` });
+    setMessages([{
+      role: "assistant",
+      type: "info",
+      answer: `Loaded "${src.name || `Source ${src.id}`}"${src.row_count ? ` (${src.row_count.toLocaleString()} pages/rows)` : ""}. Ask me anything!`,
+    }]);
+    setQuestion("");
+    setUploadError("");
+  };
+
+  const handleDeleteSource = async (srcId, e) => {
+    e.stopPropagation();
+    if (!window.confirm("Delete this file? This cannot be undone.")) return;
+    setDeleting(srcId);
+    try {
+      await deleteSource(srcId);
+      setSources((prev) => prev.filter((s) => s.id !== srcId));
+      if (sourceId === srcId) { setSourceId(null); setFile(null); setMessages([]); }
+    } catch { /* ignore */ }
+    finally { setDeleting(null); }
+  };
 
   const handleFile = async (f) => {
     if (!f) return;
@@ -41,6 +77,7 @@ export default function PDFTool({ onBack, chatContext }) {
       const rowCount = res.source?.row_count || 0;
       const isTabular = cols.length >= 3 && !(cols.length === 2 && cols.includes("page") && cols.includes("content"));
 
+      setSources((prev) => [{ id, name: f.name, kind: "pdf", row_count: rowCount }, ...prev]);
       setMessages([
         {
           role: "assistant",
@@ -126,31 +163,74 @@ export default function PDFTool({ onBack, chatContext }) {
       </div>
 
       {!sourceId && (
-        <div
-          onDrop={handleDrop}
-          onDragOver={(e) => e.preventDefault()}
-          onClick={() => fileRef.current.click()}
-          className="flex cursor-pointer flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed border-border-2 bg-surface-1 px-8 py-14 text-center transition-colors hover:border-brand hover:bg-brand/10/30"
-        >
-          <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-accent-rose/10 text-2xl font-bold text-accent-rose">
-            PDF
+        <div className="space-y-4">
+          {/* Upload zone */}
+          <div
+            role="button" tabIndex={0} aria-label="Upload PDF file"
+            onDrop={handleDrop} onDragOver={(e) => e.preventDefault()}
+            onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); fileRef.current.click(); } }}
+            onClick={() => !uploading && fileRef.current.click()}
+            className={`flex cursor-pointer flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed border-border-2 bg-surface-1 px-8 py-10 text-center transition-colors hover:border-accent-rose/50 hover:bg-accent-rose/[0.03] ${uploading ? "pointer-events-none opacity-60" : ""}`}
+          >
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-accent-rose/10 text-lg font-bold text-accent-rose">PDF</div>
+            {uploading ? (
+              <p className="text-sm font-medium text-muted animate-pulse">Uploading & analyzing PDF…</p>
+            ) : (
+              <>
+                <p className="font-medium text-ink">Drop your PDF file here or click to browse</p>
+                <p className="text-sm text-muted-2">.pdf supported · max 50 MB</p>
+              </>
+            )}
+            {uploadError && <p className="text-sm text-accent-rose">{uploadError}</p>}
+            <input ref={fileRef} type="file" accept=".pdf" className="hidden" onChange={(e) => handleFile(e.target.files[0])} />
           </div>
-          {uploading ? (
-            <p className="text-sm font-medium text-muted">Uploading & analyzing PDF…</p>
-          ) : (
-            <>
-              <p className="font-medium text-ink">Drop your PDF file here</p>
-              <p className="text-sm text-muted-2">.pdf supported · max 50 MB</p>
-            </>
+
+          {/* Existing sources */}
+          {loadingSources ? (
+            <div className="space-y-2">{[1, 2].map((i) => <div key={i} className="h-14 rounded-xl bg-surface-1 animate-pulse" />)}</div>
+          ) : sources.length > 0 && (
+            <div className="rounded-2xl border border-border bg-surface-1 p-4 space-y-3">
+              <p className="text-sm font-semibold text-ink">Or select an existing file</p>
+              <div className="grid gap-1.5 max-h-[240px] overflow-y-auto pr-1">
+                {sources.map((src) => (
+                  <button
+                    key={src.id}
+                    onClick={() => handleSelectSource(src)}
+                    className="group flex w-full items-center gap-3 rounded-xl border border-border px-3.5 py-3 text-left hover:border-accent-rose/30 hover:bg-accent-rose/[0.04] transition-all"
+                  >
+                    <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-[10px] font-bold font-mono border ${
+                      src.kind === "pdf"
+                        ? "bg-accent-rose/10 text-accent-rose border-accent-rose/20"
+                        : "bg-surface-3 text-muted border-border"
+                    }`}>
+                      {(src.kind || "F").slice(0, 3).toUpperCase()}
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-ink truncate">{src.name || `Source ${src.id}`}</p>
+                      <p className="text-[11px] text-muted-2">
+                        {src.row_count ? `${src.row_count.toLocaleString()} ${src.kind === "pdf" ? "pages" : "rows"}` : src.kind || "file"}
+                      </p>
+                    </div>
+                    <span className="text-xs font-semibold text-accent-rose opacity-0 group-hover:opacity-100 transition-opacity shrink-0">Select →</span>
+                    <button
+                      aria-label={`Delete ${src.name}`}
+                      onClick={(e) => handleDeleteSource(src.id, e)}
+                      disabled={deleting === src.id}
+                      className="shrink-0 rounded-lg p-1.5 text-muted-2 opacity-0 group-hover:opacity-100 hover:bg-accent-rose/10 hover:text-accent-rose disabled:opacity-50 transition-all"
+                    >
+                      {deleting === src.id ? (
+                        <span className="block h-3.5 w-3.5 animate-spin rounded-full border-2 border-accent-rose/30 border-t-accent-rose" />
+                      ) : (
+                        <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      )}
+                    </button>
+                  </button>
+                ))}
+              </div>
+            </div>
           )}
-          {uploadError && <p className="text-sm text-accent-rose">{uploadError}</p>}
-          <input
-            ref={fileRef}
-            type="file"
-            accept=".pdf"
-            className="hidden"
-            onChange={(e) => handleFile(e.target.files[0])}
-          />
         </div>
       )}
 
