@@ -36,12 +36,18 @@ _EXT_TO_KIND: dict[str, str] = {
 }
 
 
+_ALLOWED_EXTENSIONS = frozenset(_EXT_TO_KIND.keys())
+
+
 def _save_upload(file: UploadFile) -> str:
     os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
-    ext = os.path.splitext(file.filename or "")[1]
+    ext = os.path.splitext(file.filename or "")[1].lower()
+    if ext not in _ALLOWED_EXTENSIONS:
+        raise HTTPException(status_code=400, detail=f"File type '{ext}' is not allowed")
     path = os.path.join(settings.UPLOAD_DIR, f"{uuid.uuid4().hex}{ext}")
-    contents = file.file.read()
-    if len(contents) > settings.MAX_UPLOAD_MB * 1024 * 1024:
+    max_bytes = settings.MAX_UPLOAD_MB * 1024 * 1024
+    contents = file.file.read(max_bytes + 1)
+    if len(contents) > max_bytes:
         raise HTTPException(status_code=413, detail=f"File exceeds {settings.MAX_UPLOAD_MB} MB limit")
     with open(path, "wb") as f:
         f.write(contents)

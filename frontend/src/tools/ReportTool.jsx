@@ -937,23 +937,29 @@ function FilterControl({ column, meta, value, onChange }) {
 
   if (meta.type === "datetime") {
     const cur = value || {};
+    const rangeError = cur.min && cur.max && cur.min > cur.max;
     return (
       <div className="space-y-1.5">
         <label className="text-xs font-semibold text-muted">{formatLabel(column)}</label>
         <div className="flex gap-2">
           <input
             type="date"
+            aria-label={`${formatLabel(column)} start date`}
             value={cur.min || ""}
+            max={cur.max || undefined}
             onChange={(e) => onChange({ ...cur, min: e.target.value })}
             className="flex-1 rounded-xl border border-border bg-transparent px-3 py-2 text-sm text-ink outline-none focus:border-brand/50"
           />
           <input
             type="date"
+            aria-label={`${formatLabel(column)} end date`}
             value={cur.max || ""}
+            min={cur.min || undefined}
             onChange={(e) => onChange({ ...cur, max: e.target.value })}
             className="flex-1 rounded-xl border border-border bg-transparent px-3 py-2 text-sm text-ink outline-none focus:border-brand/50"
           />
         </div>
+        {rangeError && <p className="text-[11px] text-accent-rose">Start date must be before end date</p>}
       </div>
     );
   }

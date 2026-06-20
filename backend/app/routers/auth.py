@@ -26,27 +26,16 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 #     return TokenResponse(access_token=create_access_token(user.email))
 @router.post("/signup", response_model=TokenResponse)
 def signup(payload: SignupRequest, db: Session = Depends(get_db)):
-
-    print("=" * 50)
-    print("EMAIL:", payload.email)
-    print("PASSWORD:", payload.password)
-    print("TYPE:", type(payload.password))
-    print("LENGTH:", len(str(payload.password)))
-    print("=" * 50)
-
     if db.query(User).filter(User.email == payload.email).first():
         raise HTTPException(status_code=400, detail="Email already registered")
-
     user = User(
         email=payload.email,
         full_name=payload.full_name,
         hashed_password=hash_password(payload.password),
     )
-
     db.add(user)
     db.commit()
     db.refresh(user)
-
     return TokenResponse(access_token=create_access_token(user.email))
 
 

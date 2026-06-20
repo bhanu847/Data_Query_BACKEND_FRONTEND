@@ -37,16 +37,19 @@ export default function Sidebar({ active, onSelect, onNewAnalysis, sourceCount =
       <div className="relative mb-2.5" ref={menuRef}>
         <button
           onClick={() => setMenuOpen((v) => !v)}
+          aria-haspopup="true"
+          aria-expanded={menuOpen}
           className="flex items-center gap-2.5 w-full rounded-xl bg-gradient-brand px-3.5 py-2.5 text-sm font-semibold text-[#050710] shadow-[0_6px_20px_rgba(34,211,238,0.28)] hover:-translate-y-0.5 transition-transform"
         >
-          <span className="text-[15px]">&#xFF0B;</span> New analysis
+          <span className="text-[15px]" aria-hidden="true">&#xFF0B;</span> New analysis
         </button>
 
         {menuOpen && (
-          <div className="absolute left-0 right-0 top-full mt-1.5 z-50 rounded-xl border border-border bg-[rgba(12,16,28,0.95)] backdrop-blur-xl shadow-[0_12px_40px_rgba(0,0,0,0.5)] p-1.5 animate-fade-in">
+          <div role="menu" aria-label="New analysis options" className="absolute left-0 right-0 top-full mt-1.5 z-50 rounded-xl border border-border bg-[rgba(12,16,28,0.95)] backdrop-blur-xl shadow-[0_12px_40px_rgba(0,0,0,0.5)] p-1.5 animate-fade-in">
             {NEW_ANALYSIS_OPTIONS.map((opt) => (
               <button
                 key={opt.key}
+                role="menuitem"
                 onClick={() => { setMenuOpen(false); onNewAnalysis(opt.key); }}
                 className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-ink hover:bg-surface-2 transition-colors"
               >

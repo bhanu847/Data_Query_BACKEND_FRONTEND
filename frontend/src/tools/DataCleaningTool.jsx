@@ -101,16 +101,21 @@ export default function DataCleaningTool({ onBack }) {
   const handleDrop = (e) => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) handleFile(f); };
 
   /* ── Fix actions ── */
+  const [fixError, setFixError] = useState("");
+
   const applyFix = useCallback(async (fixId) => {
     if (!sourceId) return;
     const newFixes = [...appliedFixes, fixId];
     setAppliedFixes(newFixes);
     setCleaning(fixId);
+    setFixError("");
     try {
       const result = await applyCleanFixes(sourceId, newFixes);
       setCleanResult(result);
-    } catch { /* ignore */ }
-    finally { setCleaning(null); }
+    } catch (e) {
+      setFixError(`Fix failed: ${e.message}`);
+      setAppliedFixes(appliedFixes);
+    } finally { setCleaning(null); }
   }, [sourceId, appliedFixes]);
 
   const applyAllFixes = useCallback(async () => {
@@ -119,21 +124,26 @@ export default function DataCleaningTool({ onBack }) {
     const unique = [...new Set(allFixes)];
     setAppliedFixes(unique);
     setCleaning("all");
+    setFixError("");
     try {
       const result = await applyCleanFixes(sourceId, unique);
       setCleanResult(result);
-    } catch { /* ignore */ }
-    finally { setCleaning(null); }
+    } catch (e) {
+      setFixError(`Auto-fix failed: ${e.message}`);
+      setAppliedFixes([]);
+    } finally { setCleaning(null); }
   }, [sourceId, profile]);
 
   const handleDownload = useCallback(async () => {
     if (!sourceId) return;
     setDownloading(true);
+    setFixError("");
     try {
       const fixes = appliedFixes.length ? appliedFixes : profile.recommendations.map((r) => r.fix);
       await downloadCleanedFile(sourceId, [...new Set(fixes)]);
-    } catch { /* ignore */ }
-    finally { setDownloading(false); }
+    } catch (e) {
+      setFixError(`Download failed: ${e.message}`);
+    } finally { setDownloading(false); }
   }, [sourceId, appliedFixes, profile]);
 
   const resetAll = () => {
@@ -407,6 +417,9 @@ export default function DataCleaningTool({ onBack }) {
           {/* ── Tab: Recommendations ── */}
           {tab === "recommendations" && (
             <div className="space-y-3">
+              {fixError && (
+                <div className="rounded-xl bg-accent-rose/10 border border-accent-rose/25 px-4 py-3 text-sm text-accent-rose">{fixError}</div>
+              )}
               {profile.recommendations.length > 0 && (
                 <div className="flex justify-end">
                   <button

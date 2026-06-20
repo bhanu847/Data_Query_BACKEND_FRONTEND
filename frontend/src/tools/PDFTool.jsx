@@ -207,26 +207,33 @@ export default function PDFTool({ onBack, chatContext }) {
 
 function DownloadButtons({ sourceId, question }) {
   const [downloading, setDownloading] = useState(false);
+  const [dlError, setDlError] = useState("");
   const handleDownload = async (format) => {
     if (!question || !sourceId) return;
     setDownloading(true);
+    setDlError("");
     try {
       if (format === "excel") await downloadAsExcel(sourceId, question);
       else if (format === "pdf") await downloadAsPDF(sourceId, question);
       else await downloadAsJSON(sourceId, question);
-    } catch { /* ignore */ } finally { setDownloading(false); }
+    } catch (e) {
+      setDlError(`Download failed: ${e.message}`);
+    } finally { setDownloading(false); }
   };
   return (
-    <div className="flex gap-2 pt-2 border-t border-border">
-      <span className="text-xs text-muted-2 self-center">Download:</span>
-      {[
-        { fmt: "excel", label: "Excel", bg: "bg-accent-emerald/10 text-accent-emerald hover:bg-green-100" },
-        { fmt: "pdf", label: "PDF", bg: "bg-accent-rose/10 text-accent-rose hover:bg-red-100" },
-        { fmt: "json", label: "JSON", bg: "bg-brand/10 text-brand hover:bg-blue-100" },
-      ].map(({ fmt, label, bg }) => (
-        <button key={fmt} onClick={() => handleDownload(fmt)} disabled={downloading}
-          className={`rounded-lg px-3 py-1 text-xs font-medium disabled:opacity-50 ${bg}`}>{label}</button>
-      ))}
+    <div className="space-y-1 pt-2 border-t border-border">
+      <div className="flex gap-2">
+        <span className="text-xs text-muted-2 self-center">Download:</span>
+        {[
+          { fmt: "excel", label: "Excel", bg: "bg-accent-emerald/10 text-accent-emerald hover:bg-green-100" },
+          { fmt: "pdf", label: "PDF", bg: "bg-accent-rose/10 text-accent-rose hover:bg-red-100" },
+          { fmt: "json", label: "JSON", bg: "bg-brand/10 text-brand hover:bg-blue-100" },
+        ].map(({ fmt, label, bg }) => (
+          <button key={fmt} onClick={() => handleDownload(fmt)} disabled={downloading} aria-label={`Download as ${label}`}
+            className={`rounded-lg px-3 py-1 text-xs font-medium disabled:opacity-50 ${bg}`}>{label}</button>
+        ))}
+      </div>
+      {dlError && <p className="text-[11px] text-accent-rose">{dlError}</p>}
     </div>
   );
 }

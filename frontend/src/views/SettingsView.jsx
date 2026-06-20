@@ -74,6 +74,9 @@ export default function SettingsView() {
           <input
             type="url"
             value={apiUrl}
+            maxLength={512}
+            pattern="https?://.*"
+            placeholder="http://localhost:8000"
             onChange={(e) => setApiUrl(e.target.value)}
             className="w-full rounded-xl bg-surface-2 border border-border px-4 py-2.5 text-sm text-ink font-mono outline-none focus:border-brand/50 focus:ring-2 focus:ring-brand/10 transition-all"
           />

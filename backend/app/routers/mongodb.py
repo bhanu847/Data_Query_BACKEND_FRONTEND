@@ -1,5 +1,6 @@
 import json
 from typing import Any
+from urllib.parse import quote_plus
 
 import pandas as pd
 from fastapi import APIRouter, Depends, HTTPException
@@ -29,14 +30,17 @@ def _get_mongo_client(conn: dict):
             detail="pymongo is not installed. Run: pip install pymongo",
         )
 
+    host = conn["host"].split("/")[0].split("?")[0]
+    port = int(conn["port"])
+    database = quote_plus(conn["database"])
     if conn.get("username") and conn.get("password"):
         uri = (
-            f"mongodb://{conn['username']}:{conn['password']}"
-            f"@{conn['host']}:{conn['port']}"
-            f"/{conn['database']}?authSource={conn.get('auth_source', 'admin')}"
+            f"mongodb://{quote_plus(conn['username'])}:{quote_plus(conn['password'])}"
+            f"@{host}:{port}"
+            f"/{database}?authSource={quote_plus(conn.get('auth_source', 'admin'))}"
         )
     else:
-        uri = f"mongodb://{conn['host']}:{conn['port']}/{conn['database']}"
+        uri = f"mongodb://{host}:{port}/{database}"
 
     client = MongoClient(uri, serverSelectionTimeoutMS=5000)
     client.admin.command("ping")

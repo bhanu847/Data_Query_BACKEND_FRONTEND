@@ -15,6 +15,7 @@ export default function DashboardsView({ onOpenTool }) {
 
   const handleDelete = async (id, e) => {
     e.stopPropagation();
+    if (!window.confirm("Delete this dashboard? This cannot be undone.")) return;
     try {
       await deleteDashboard(id);
       setDashboards((prev) => prev.filter((d) => d.id !== id));

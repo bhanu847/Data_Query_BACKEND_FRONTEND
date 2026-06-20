@@ -293,6 +293,7 @@ export default function DashboardTool({ onBack }) {
 
   const handleDeleteDashboard = async (id, e) => {
     e.stopPropagation();
+    if (!window.confirm("Delete this dashboard? This cannot be undone.")) return;
     try {
       await deleteDashboard(id);
       setSavedDashboards((prev) => prev.filter((d) => d.id !== id));
@@ -447,7 +448,7 @@ export default function DashboardTool({ onBack }) {
                 }`}>
                 <span className="font-medium flex-1 truncate">{src.name || `Source ${src.id}`}</span>
                 <span className="text-xs text-muted-2">{src.kind || "file"}</span>
-                <button onClick={(e) => { e.stopPropagation(); deleteSource(src.id).then(() => setSources((prev) => prev.filter((s) => s.id !== src.id))); }}
+                <button aria-label={`Delete source ${src.name || src.id}`} onClick={(e) => { e.stopPropagation(); if (!window.confirm("Delete this data source? This cannot be undone.")) return; deleteSource(src.id).then(() => setSources((prev) => prev.filter((s) => s.id !== src.id))); }}
                   className="shrink-0 rounded p-1 text-muted-2 opacity-0 group-hover:opacity-100 hover:bg-accent-rose/10 hover:text-accent-rose transition-all" title="Delete source">
                   <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />

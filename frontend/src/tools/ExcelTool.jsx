@@ -131,12 +131,16 @@ export default function ExcelTool({ onBack, chatContext }) {
 
       {!sourceId && (
         <div
+          role="button"
+          tabIndex={0}
+          aria-label="Upload data file"
           onDrop={handleDrop}
           onDragOver={(e) => e.preventDefault()}
-          onClick={() => fileRef.current.click()}
-          className="flex cursor-pointer flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed border-border-2 bg-surface-1 px-8 py-14 text-center transition-colors hover:border-brand hover:bg-brand/10/30"
+          onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); fileRef.current.click(); } }}
+          onClick={() => !uploading && fileRef.current.click()}
+          className={`flex cursor-pointer flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed border-border-2 bg-surface-1 px-8 py-14 text-center transition-colors hover:border-brand hover:bg-brand/[0.03] ${uploading ? "pointer-events-none opacity-60" : ""}`}
         >
-          <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-accent-emerald/10 text-2xl font-bold text-accent-emerald">
+          <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-accent-emerald/10 text-2xl font-bold text-accent-emerald" aria-hidden="true">
             📂
           </div>
           {uploading ? (
@@ -211,26 +215,33 @@ export default function ExcelTool({ onBack, chatContext }) {
 
 function DownloadButtons({ sourceId, question }) {
   const [downloading, setDownloading] = useState(false);
+  const [dlError, setDlError] = useState("");
   const handleDownload = async (format) => {
     if (!question || !sourceId) return;
     setDownloading(true);
+    setDlError("");
     try {
       if (format === "excel") await downloadAsExcel(sourceId, question);
       else if (format === "pdf") await downloadAsPDF(sourceId, question);
       else await downloadAsJSON(sourceId, question);
-    } catch { /* ignore */ } finally { setDownloading(false); }
+    } catch (e) {
+      setDlError(`Download failed: ${e.message}`);
+    } finally { setDownloading(false); }
   };
   return (
-    <div className="flex gap-2 pt-2 border-t border-border">
-      <span className="text-xs text-muted-2 self-center">Download:</span>
-      {[
-        { fmt: "excel", label: "Excel", bg: "bg-accent-emerald/10 text-accent-emerald hover:bg-green-100" },
-        { fmt: "pdf", label: "PDF", bg: "bg-accent-rose/10 text-accent-rose hover:bg-red-100" },
-        { fmt: "json", label: "JSON", bg: "bg-brand/10 text-brand hover:bg-blue-100" },
-      ].map(({ fmt, label, bg }) => (
-        <button key={fmt} onClick={() => handleDownload(fmt)} disabled={downloading}
-          className={`rounded-lg px-3 py-1 text-xs font-medium disabled:opacity-50 ${bg}`}>{label}</button>
-      ))}
+    <div className="space-y-1 pt-2 border-t border-border">
+      <div className="flex gap-2">
+        <span className="text-xs text-muted-2 self-center">Download:</span>
+        {[
+          { fmt: "excel", label: "Excel", bg: "bg-accent-emerald/10 text-accent-emerald hover:bg-green-100" },
+          { fmt: "pdf", label: "PDF", bg: "bg-accent-rose/10 text-accent-rose hover:bg-red-100" },
+          { fmt: "json", label: "JSON", bg: "bg-brand/10 text-brand hover:bg-blue-100" },
+        ].map(({ fmt, label, bg }) => (
+          <button key={fmt} onClick={() => handleDownload(fmt)} disabled={downloading} aria-label={`Download as ${label}`}
+            className={`rounded-lg px-3 py-1 text-xs font-medium disabled:opacity-50 ${bg}`}>{label}</button>
+        ))}
+      </div>
+      {dlError && <p className="text-[11px] text-accent-rose">{dlError}</p>}
     </div>
   );
 }
@@ -345,7 +356,7 @@ function ChatBubble({ msg, sourceId }) {
               <thead className="bg-surface-2 sticky top-0 z-10">
                 <tr>
                   {Object.keys(msg.table[0]).map((col) => (
-                    <th key={col} className="px-3 py-2 text-left text-xs font-semibold text-muted whitespace-nowrap">{col}</th>
+                    <th key={col} scope="col" className="px-3 py-2 text-left text-xs font-semibold text-muted whitespace-nowrap">{col}</th>
                   ))}
                 </tr>
               </thead>
