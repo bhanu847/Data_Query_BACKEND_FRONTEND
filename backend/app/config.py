@@ -4,6 +4,13 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
+def _fix_database_url(url: str) -> str:
+    """Render/Heroku give postgres:// but SQLAlchemy requires postgresql://"""
+    if url.startswith("postgres://"):
+        return url.replace("postgres://", "postgresql+psycopg2://", 1)
+    return url
+
+
 class Settings:
     """App settings, driven by environment variables (see .env.example)."""
 
@@ -12,12 +19,10 @@ class Settings:
     JWT_ALGORITHM: str = os.getenv("JWT_ALGORITHM", "HS256")
     ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "10080"))  # 7 days
 
-    # Database. Defaults to local SQLite so the app runs with zero setup.
-    # Render gives postgres:// but SQLAlchemy requires postgresql://
-    _raw_db = os.getenv("DATABASE_URL", "sqlite:///./dataquery.db")
-    DATABASE_URL: str = _raw_db.replace("postgres://", "postgresql://", 1) if _raw_db.startswith("postgres://") else _raw_db
+    # Database
+    DATABASE_URL: str = _fix_database_url(os.getenv("DATABASE_URL", "sqlite:///./dataquery.db"))
 
-    # AI. If no key is set, the query/dashboard engines fall back to pandas-only logic.
+    # AI
     OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "")
     OPENAI_MODEL: str = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
 
@@ -25,7 +30,7 @@ class Settings:
     UPLOAD_DIR: str = os.getenv("UPLOAD_DIR", "./uploads")
     MAX_UPLOAD_MB: int = int(os.getenv("MAX_UPLOAD_MB", "50"))
 
-    # CORS — set CORS_ORIGINS env var to your Vercel domain in production
+    # CORS
     CORS_ORIGINS: list[str] = [
         o.strip() for o in os.getenv(
             "CORS_ORIGINS",
