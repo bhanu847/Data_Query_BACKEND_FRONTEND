@@ -5,32 +5,32 @@ load_dotenv()
 
 
 def _fix_database_url(url: str) -> str:
-    """Render/Heroku give postgres:// but SQLAlchemy requires postgresql://"""
+    if not url or "your" in url.lower():
+        return "sqlite:///./dataquery.db"
     if url.startswith("postgres://"):
         return url.replace("postgres://", "postgresql+psycopg2://", 1)
     return url
 
 
-class Settings:
-    """App settings, driven by environment variables (see .env.example)."""
+def _clean_key(val: str) -> str:
+    if not val or "your" in val.lower() or val == "change-me-in-production":
+        return ""
+    return val
 
-    # Auth
+
+class Settings:
     JWT_SECRET: str = os.getenv("JWT_SECRET", "change-me-in-production")
     JWT_ALGORITHM: str = os.getenv("JWT_ALGORITHM", "HS256")
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "10080"))  # 7 days
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "10080"))
 
-    # Database
     DATABASE_URL: str = _fix_database_url(os.getenv("DATABASE_URL", "sqlite:///./dataquery.db"))
 
-    # AI
-    OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "")
+    OPENAI_API_KEY: str = _clean_key(os.getenv("OPENAI_API_KEY", ""))
     OPENAI_MODEL: str = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
 
-    # Uploads
     UPLOAD_DIR: str = os.getenv("UPLOAD_DIR", "./uploads")
     MAX_UPLOAD_MB: int = int(os.getenv("MAX_UPLOAD_MB", "50"))
 
-    # CORS
     CORS_ORIGINS: list[str] = [
         o.strip() for o in os.getenv(
             "CORS_ORIGINS",

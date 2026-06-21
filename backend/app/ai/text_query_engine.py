@@ -15,11 +15,12 @@ from app.config import settings
 
 
 def _client():
-    if not settings.OPENAI_API_KEY:
+    key = settings.OPENAI_API_KEY
+    if not key or not key.startswith("sk-"):
         return None
     try:
         from openai import OpenAI
-        return OpenAI(api_key=settings.OPENAI_API_KEY, timeout=15.0, max_retries=0)
+        return OpenAI(api_key=key, timeout=15.0, max_retries=0)
     except Exception:
         return None
 
