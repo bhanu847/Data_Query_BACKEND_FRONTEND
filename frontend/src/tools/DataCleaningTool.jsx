@@ -1,10 +1,12 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import {
   uploadAny,
+  listSources,
   profileDataset,
   applyCleanFixes,
   downloadCleanedFile,
 } from "../services/api";
+import DatabaseConnector from "../components/DatabaseConnector";
 import {
   ResponsiveContainer,
   PieChart, Pie, Cell, Tooltip,
@@ -43,6 +45,9 @@ export default function DataCleaningTool({ onBack }) {
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState("");
 
+  const [sources, setSources] = useState([]);
+  const [loadingSources, setLoadingSources] = useState(true);
+
   const [profile, setProfile] = useState(null);
   const [analyzing, setAnalyzing] = useState(false);
   const [currentStep, setCurrentStep] = useState(-1);
@@ -55,6 +60,22 @@ export default function DataCleaningTool({ onBack }) {
   const [tab, setTab] = useState("overview");
 
   const fileRef = useRef();
+
+  useEffect(() => {
+    listSources().then(setSources).catch(() => []).finally(() => setLoadingSources(false));
+  }, []);
+
+  /* ── Select existing source or DB connection ── */
+  const handleSourceSelected = async (src) => {
+    setSourceId(src.id);
+    setFile({ name: src.name || `Source ${src.id}` });
+    setProfile(null);
+    setCleanResult(null);
+    setAppliedFixes([]);
+    setUploadError("");
+    setCurrentStep(1);
+    await runProfile(src.id);
+  };
 
   /* ── Upload & auto-profile ── */
   const handleFile = async (f) => {
@@ -71,6 +92,7 @@ export default function DataCleaningTool({ onBack }) {
       const res = await uploadAny(f);
       const id = res.source_id || res.id;
       setSourceId(id);
+      setSources((prev) => [{ id, name: f.name, kind: f.name.split(".").pop(), row_count: res.source?.row_count }, ...prev]);
       setCurrentStep(1);
       await runProfile(id);
     } catch (e) {
@@ -193,29 +215,32 @@ export default function DataCleaningTool({ onBack }) {
         )}
       </div>
 
-      {/* ── Upload state ── */}
-      {!sourceId && !uploading && (
+      {/* ── Source selection state ── */}
+      {!sourceId && !uploading && !analyzing && (
         <>
-          <div
-            onDrop={handleDrop}
-            onDragOver={(e) => e.preventDefault()}
-            onClick={() => fileRef.current?.click()}
-            className="group relative flex cursor-pointer flex-col items-center justify-center gap-4 rounded-2xl border-2 border-dashed border-border-2 bg-surface-1 px-8 py-16 text-center transition-all hover:border-brand hover:bg-brand/[0.03] overflow-hidden"
+          <DatabaseConnector
+            sources={sources}
+            loadingSources={loadingSources}
+            onSourceSelected={handleSourceSelected}
           >
-            <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full blur-[50px] opacity-30 bg-gradient-brand pointer-events-none group-hover:opacity-50 transition-opacity" />
-            <div className="relative flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-brand text-xl font-bold text-[#050710] shadow-glow-sm font-display">
-              FIX
+            {/* Upload zone as first child inside "Existing Data" tab */}
+            <div
+              role="button" tabIndex={0} aria-label="Upload data file"
+              onDrop={handleDrop} onDragOver={(e) => e.preventDefault()}
+              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); fileRef.current?.click(); } }}
+              onClick={() => fileRef.current?.click()}
+              className="group relative flex cursor-pointer flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed border-border-2 bg-surface-1 px-8 py-10 text-center transition-all hover:border-brand hover:bg-brand/[0.03] overflow-hidden"
+            >
+              <div className="absolute -top-10 -right-10 w-32 h-32 rounded-full blur-[40px] opacity-25 bg-gradient-brand pointer-events-none group-hover:opacity-40 transition-opacity" />
+              <div className="relative flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-brand text-lg font-bold text-[#050710] shadow-glow-sm font-display">FIX</div>
+              <div className="relative">
+                <p className="font-medium text-ink">Drop your file here or click to browse</p>
+                <p className="text-sm text-muted-2 mt-1">.csv, .xlsx, .json, .tsv, .parquet, .xml</p>
+              </div>
+              {uploadError && <p className="relative text-sm text-accent-rose">{uploadError}</p>}
+              <input ref={fileRef} type="file" accept=".csv,.xlsx,.xls,.json,.tsv,.parquet,.xml" className="hidden" onChange={(e) => { handleFile(e.target.files[0]); e.target.value = ""; }} />
             </div>
-            <div className="relative">
-              <p className="font-display text-lg font-semibold text-ink">Drop your Excel or CSV file here</p>
-              <p className="text-sm text-muted-2 mt-1">Supports .xlsx, .xls, and .csv files</p>
-            </div>
-            <button className="relative rounded-xl bg-surface-2 border border-border-2 px-5 py-2 text-sm font-semibold text-ink hover:bg-surface-3 transition-colors">
-              Browse File
-            </button>
-            {uploadError && <p className="relative text-sm text-accent-rose">{uploadError}</p>}
-            <input ref={fileRef} type="file" accept=".csv,.xlsx,.xls,.json,.tsv,.parquet,.xml" className="hidden" onChange={(e) => handleFile(e.target.files[0])} />
-          </div>
+          </DatabaseConnector>
 
           {/* Feature cards */}
           <div>

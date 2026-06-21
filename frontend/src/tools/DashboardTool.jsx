@@ -7,6 +7,7 @@ import DashboardCanvas from "../components/DashboardCanvas";
 import AddChartModal from "../components/AddChartModal";
 import ConfirmModal from "../components/ConfirmModal";
 import useConfirm from "../hooks/useConfirm";
+import DatabaseConnector from "../components/DatabaseConnector";
 import KpiBuilder from "../components/KpiBuilder";
 import FilterPanel from "../components/FilterPanel";
 import DashboardTemplates from "../components/DashboardTemplates";
@@ -438,32 +439,14 @@ export default function DashboardTool({ onBack }) {
       <div className="rounded-2xl border border-border bg-surface-1 p-6 space-y-4">
         <h3 className="text-sm font-semibold text-ink">Select a data source</h3>
 
-        {loadingSources ? (
-          <p className="text-sm text-muted-2 animate-pulse">Loading sources...</p>
-        ) : sources.length === 0 ? (
-          <div className="rounded-xl bg-surface-1 border border-border p-5 text-center">
-            <p className="text-sm text-muted">No data sources yet.</p>
-            <p className="mt-1 text-xs text-muted-2">Upload an Excel or CSV file first using "Chat with Data".</p>
-          </div>
-        ) : (
-          <div className="grid gap-2">
-            {sources.map((src) => (
-              <div key={src.id} onClick={() => handleSelectSource(src.id)}
-                className={`group flex items-center gap-3 rounded-xl border px-4 py-3 text-sm cursor-pointer transition-colors ${
-                  selectedSource === src.id ? "border-brand bg-brand/10 text-brand" : "border-border hover:bg-surface-1 text-ink"
-                }`}>
-                <span className="font-medium flex-1 truncate">{src.name || `Source ${src.id}`}</span>
-                <span className="text-xs text-muted-2">{src.kind || "file"}</span>
-                <button aria-label={`Delete source ${src.name || src.id}`} onClick={async (e) => { e.stopPropagation(); const ok = await confirm({ title: "Delete Data Source", message: "This data source will be permanently deleted. This action cannot be undone." }); if (!ok) return; deleteSource(src.id).then(() => setSources((prev) => prev.filter((s) => s.id !== src.id))); }}
-                  className="shrink-0 rounded p-1 text-muted-2 opacity-0 group-hover:opacity-100 hover:bg-accent-rose/10 hover:text-accent-rose transition-all" title="Delete source">
-                  <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
+        <DatabaseConnector
+          sources={sources}
+          loadingSources={loadingSources}
+          onSourceSelected={(src) => {
+            if (!sources.find((s) => s.id === src.id)) setSources((prev) => [src, ...prev]);
+            handleSelectSource(src.id);
+          }}
+        />
 
         {error && <p className="text-sm text-accent-rose">{error}</p>}
 
