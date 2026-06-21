@@ -104,6 +104,9 @@ INTENT_PATTERNS: list[tuple[str, str, dict[str, Any]]] = [
     # Filtering
     (r"\b(where|filter|only|excluding|include only|greater than|less than|between|equal to)\b", "filter", {}),
 
+    # AI analysis — open-ended questions that need GPT reasoning
+    (r"\b(why|recommend|strategy|suggest|advice|story|concern|concerning|takeaway|takeaways|insight|insights|explain why|root cause|predict|forecast|opinion|think|should i|would you|what if|what would|what happen|improve|opportunity|opportunities|risk|weakness|strength|pros and cons|action items|actionable)\b", "ai_analysis", {}),
+
     # Summary
     (r"\b(summary|summarize|overview|executive summary|report|describe|tell me about)\b", "summary", {}),
 
@@ -347,16 +350,16 @@ def _classify_intent(question: str, df: pd.DataFrame) -> dict[str, Any]:
     for pattern, intent_type, params in INTENT_PATTERNS:
         match = re.search(pattern, q_lower)
         if match:
-            # show_data / unique_values are high-priority — once matched, skip weaker patterns
-            if intent["type"] in ("show_data", "unique_values"):
+            # show_data / unique_values / ai_analysis are high-priority — once matched, skip weaker patterns
+            if intent["type"] in ("show_data", "unique_values", "ai_analysis"):
                 continue
             # ranking_count is more specific than ranking_metric — don't let
             # a generic "most" override an already-matched "most popular"
             if intent["type"] == "ranking_count" and intent_type == "ranking_metric":
                 continue
-            if intent["type"] == "unknown" or intent_type in ("show_data", "unique_values", "ranking_count", "ranking_metric", "top_n", "comparison", "trend"):
+            if intent["type"] == "unknown" or intent_type in ("show_data", "unique_values", "ai_analysis", "ranking_count", "ranking_metric", "top_n", "comparison", "trend"):
                 intent["type"] = intent_type
-                intent["confidence"] = 0.85 if intent_type not in ("show_data", "unique_values") else 0.95
+                intent["confidence"] = 0.85 if intent_type not in ("show_data", "unique_values", "ai_analysis") else 0.95
                 intent["params"].update(params)
                 if "sort" in params:
                     intent["sort_direction"] = params["sort"]
@@ -1060,6 +1063,10 @@ def _execute_intent(df: pd.DataFrame, intent: dict) -> dict[str, Any]:
             f"Showing filtered data ({len(df):,} rows).",
             df.head(100), intent, df
         )
+
+    # -- AI Analysis (GPT-powered reasoning) --
+    if itype == "ai_analysis":
+        return _llm_fallback(df, intent)
 
     # -- Fallback: try LLM --
     return _llm_fallback(df, intent)
