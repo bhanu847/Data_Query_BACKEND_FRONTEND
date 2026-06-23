@@ -72,11 +72,11 @@ INTENT_PATTERNS: list[tuple[str, str, dict[str, Any]]] = [
     (r"\b(head|tail|sample|preview)\b", "show_data", {}),
 
     # Unique values
-    (r"\b(unique|distinct|all|list all|different)\b.*\b(values?|categories|types|kinds|options|names?)\b", "unique_values", {}),
+    (r"\b(unique|distinct|list all|all\s+(?:unique|distinct|different)|different)\b.*\b(values?|categories|types|kinds|options|names?)\b", "unique_values", {}),
 
     # Ranking
-    (r"\b(most popular|most common|most frequent|most used)\b", "ranking_count", {"sort": "desc"}),
-    (r"\b(least popular|least common|least frequent|least used)\b", "ranking_count", {"sort": "asc"}),
+    (r"\b(most popular|most common|most frequent\w*|most ordered|most used)\b", "ranking_count", {"sort": "desc"}),
+    (r"\b(least popular|least common|least frequent\w*|least ordered|least used)\b", "ranking_count", {"sort": "asc"}),
     (r"\b(highest|largest|biggest|maximum|max|most|top|best|leading|greatest)\b", "ranking_metric", {"sort": "desc"}),
     (r"\b(lowest|smallest|minimum|min|least|bottom|worst|fewest)\b", "ranking_metric", {"sort": "asc"}),
     (r"\btop\s+(\d+)\b", "top_n", {"sort": "desc"}),
@@ -91,21 +91,72 @@ INTENT_PATTERNS: list[tuple[str, str, dict[str, Any]]] = [
     # Comparison
     (r"\b(compare|comparison|versus|vs\.?|difference between|against)\b", "comparison", {}),
 
+    # Time-of-day / day-of-week analysis (must be before trend and ranking)
+    (r"\b(busiest|slowest|peak|quietest|least busy)\b.*\b(hour|time|period)\b", "time_analysis", {"granularity": "hour"}),
+    (r"\b(busiest|slowest|peak|quietest|least busy)\b.*\b(day|weekday|day of week)\b", "time_analysis", {"granularity": "dayofweek"}),
+    (r"\b(busiest|slowest|peak|quietest|least busy)\b.*\b(month)\b", "time_analysis", {"granularity": "month"}),
+    (r"\border[s ]?\b.*\bby\s+(hour|time of day)\b", "time_analysis", {"granularity": "hour"}),
+    (r"\border[s ]?\b.*\bby\s+(day of week|weekday|day)\b", "time_analysis", {"granularity": "dayofweek"}),
+    (r"\b(hourly|per hour)\b.*(distribution|breakdown|trend|sales|orders?|volume|traffic)\b", "time_analysis", {"granularity": "hour"}),
+    (r"\b(distribution|breakdown|trend|sales|orders?|volume|traffic)\b.*(hourly|per hour|by hour)\b", "time_analysis", {"granularity": "hour"}),
+    (r"\bwhat\s+(hour|time)\b.*\b(most|busiest|peak|highest)\b", "time_analysis", {"granularity": "hour"}),
+    (r"\b(most|busiest|peak|highest)\b.*\b(hour|time of day)\b", "time_analysis", {"granularity": "hour"}),
+    (r"\bwhen\b.*\b(busiest|most|peak|highest|orders?|sales)\b", "time_analysis", {"granularity": "hour"}),
+    (r"\bwhich\s+hour\b", "time_analysis", {"granularity": "hour"}),
+    (r"\bwhich\s+(day|weekday)\b.*\b(most|busiest|highest)\b", "time_analysis", {"granularity": "dayofweek"}),
+    (r"\bwhich\s+month\b.*\b(most|busiest|highest)\b", "time_analysis", {"granularity": "month"}),
+
     # Trend
     (r"\b(trend|over time|monthly|weekly|daily|yearly|by month|by year|by week|by day|time series|growth)\b", "trend", {}),
 
     # Distribution / Breakdown
-    (r"\b(distribution|breakdown|split|composition|proportion|share|percentage)\b", "breakdown", {}),
+    (r"\b(distribution|breakdown|split|composition|proportion|share)\b", "breakdown", {}),
+    (r"\b(percentage|percent)\b.*\b(each|every|by|per|from|across)\b", "breakdown", {}),
+    (r"\b(each|every)\b.*\b(percentage|percent|share|proportion)\b", "breakdown", {}),
     (r"\b(by|per|for each|group by|grouped by|across)\b", "group_analysis", {}),
 
     # Correlation
-    (r"\b(correlation|relationship between|relate|correlated|scatter)\b", "correlation", {}),
+    (r"\b(corr?e?l[aei]?t\w*|core?l[aei]?t\w*|relationship between|relate|correlated|scatter|crosstab|cross.?tab|contingency|cram[eé]r|chi.?square?d?|association between)\b", "correlation", {}),
+    (r"\bdoes\b.*\b(higher|lower|more|less|increase|decrease|reduce|affect|impact|influence)\b.*\b(price|cost|quantity|demand|sales|revenue|order)\b", "correlation", {}),
 
     # Filtering
     (r"\b(where|filter|only|excluding|include only|greater than|less than|between|equal to)\b", "filter", {}),
 
+    # --- Advanced analysis (LLM code-generation) ---
+    # Scenario / What-if / Simulate
+    (r"\b(what if|if we|what would happen|simulat\w*|scenario|impact of)\b", "advanced_analysis", {}),
+    (r"\b(increase|decrease|raise|reduce|discount|remove|discontinue\w*)\b.{0,30}\b(\d+\s*%|percent|price|revenue|cost)\b", "advanced_analysis", {}),
+    # Hypothesis testing
+    (r"\b(significan\w*\s+(different|affect|impact|more|less|higher|lower)|hypothesis|t[- ]?test|anova|p[- ]?value|chi[- ]?square|mann[- ]?whitney|kruskal)\b", "advanced_analysis", {}),
+    # Pareto
+    (r"\b(pareto|80.?20|eighty.?twenty)\b", "advanced_analysis", {}),
+    (r"\bcontribute\w*\s+to\s+\d+\s*%", "advanced_analysis", {}),
+    (r"\b\d+\s*%\s*of\s*\w+\s*(generate|produce|account|contribute|make)", "advanced_analysis", {}),
+    # Market basket
+    (r"\b(bought together|purchased together|frequently.{0,10}together|basket|co.?occur\w*|same order)\b", "advanced_analysis", {}),
+    # Forecasting
+    (r"\b(predict\w*|forecast\w*|estimate.{0,10}next|project\w*|next month|next quarter|next year|future)\b", "advanced_analysis", {}),
+    # Elasticity / Volatility / Anomaly
+    (r"\b(elasticit\w*|volatilit\w*|anomal\w*|outlier\w*|unusual|abnormal)\b", "advanced_analysis", {}),
+    # Segmentation / Clustering
+    (r"\b(segment\w*|cluster\w*|group.{0,8}into|categorize.{0,8}into|classify.{0,8}into|tier\w*)\b", "advanced_analysis", {}),
+    # Revenue optimization / strategy / discontinue
+    (r"\b(discontinue\w*|optimize\w*|maximiz\w*|minimiz\w*|bundle\w*|promot\w*.{0,10}(revenue|profit|sales))\b", "advanced_analysis", {}),
+    # Underperforming / declining
+    (r"\b(underperform\w*|overperform\w*|declining|declin\w*\s+trend|struggling)\b", "advanced_analysis", {}),
+    # Weighted ranking / composite score
+    (r"\b(ranking score|weighted\s+score|composite|scoring|index.*weight)\b", "advanced_analysis", {}),
+    # Complex multi-step (among, within + which/find)
+    (r"\b(among|priced above|priced below|contribute less|contribute more|high.{0,10}but.{0,10}low|low.{0,10}but.{0,10}high)\b", "advanced_analysis", {}),
+    # Combination analysis
+    (r"\bcombination\b.*\b(highest|lowest|best|worst|most|least)\b", "advanced_analysis", {}),
+    (r"\b(highest|lowest|best|worst|most|least)\b.*\bcombination\b", "advanced_analysis", {}),
+    # Weekday vs weekend
+    (r"\bweekday\w*\s*(vs\.?|versus|compared?\s*to|against)\s*weekend\w*\b", "advanced_analysis", {}),
+    (r"\bweekend\w*\s*(vs\.?|versus|compared?\s*to|against)\s*weekday\w*\b", "advanced_analysis", {}),
+
     # AI analysis — open-ended questions that need GPT reasoning
-    (r"\b(why|recommend|strategy|suggest|advice|story|concern|concerning|takeaway|takeaways|insight|insights|explain why|root cause|predict|forecast|opinion|think|should i|would you|what if|what would|what happen|improve|opportunity|opportunities|risk|weakness|strength|pros and cons|action items|actionable)\b", "ai_analysis", {}),
+    (r"\b(why|recommend|strategy|suggest|advice|story|concern|concerning|takeaway|takeaways|insight|insights|explain why|root cause|opinion|think|should i|would you|improve|opportunity|opportunities|risk|weakness|strength|pros and cons|action items|actionable)\b", "ai_analysis", {}),
 
     # Summary
     (r"\b(summary|summarize|overview|executive summary|report|describe|tell me about)\b", "summary", {}),
@@ -340,7 +391,7 @@ def _classify_intent(question: str, df: pd.DataFrame) -> dict[str, Any]:
     }
 
     # Determine which referenced columns are numeric vs categorical
-    for col, (_, score) in col_refs.items():
+    for col, (_,  _score) in col_refs.items():
         if col in numeric:
             intent["metric_cols"].append(col)
         elif col in categorical or col in boolean:
@@ -351,13 +402,13 @@ def _classify_intent(question: str, df: pd.DataFrame) -> dict[str, Any]:
         match = re.search(pattern, q_lower)
         if match:
             # show_data / unique_values / ai_analysis are high-priority — once matched, skip weaker patterns
-            if intent["type"] in ("show_data", "unique_values", "ai_analysis"):
+            if intent["type"] in ("show_data", "unique_values", "ai_analysis", "time_analysis"):
                 continue
             # ranking_count is more specific than ranking_metric — don't let
             # a generic "most" override an already-matched "most popular"
             if intent["type"] == "ranking_count" and intent_type == "ranking_metric":
                 continue
-            if intent["type"] == "unknown" or intent_type in ("show_data", "unique_values", "ai_analysis", "ranking_count", "ranking_metric", "top_n", "comparison", "trend"):
+            if intent["type"] == "unknown" or intent_type in ("show_data", "unique_values", "ai_analysis", "ranking_count", "ranking_metric", "top_n", "comparison", "trend", "correlation", "time_analysis", "advanced_analysis"):
                 intent["type"] = intent_type
                 intent["confidence"] = 0.85 if intent_type not in ("show_data", "unique_values", "ai_analysis") else 0.95
                 intent["params"].update(params)
@@ -504,8 +555,8 @@ def _classify_intent(question: str, df: pd.DataFrame) -> dict[str, Any]:
             intent["type"] = "ranking_count"
             intent["confidence"] = 0.7
         else:
-            intent["type"] = "summary"
-            intent["confidence"] = 0.5
+            intent["type"] = "advanced_analysis"
+            intent["confidence"] = 0.6
 
     return intent
 
@@ -579,6 +630,207 @@ def _extract_comparison_values(question: str, df: pd.DataFrame, categorical: lis
                 if v.lower() in question and len(v) >= 2:
                     values.append(v)
     return values
+
+
+# ---------------------------------------------------------------------------
+#  Categorical Correlation (Chi-Square + Cramér's V + cross-tabulation)
+# ---------------------------------------------------------------------------
+
+def _chi_square_test(contingency_table: pd.DataFrame) -> dict[str, Any]:
+    try:
+        from scipy.stats import chi2_contingency
+        chi2, p, dof, expected = chi2_contingency(contingency_table)
+        return {"chi2": float(chi2), "p": float(p), "dof": int(dof),
+                "expected": expected, "method": "scipy"}
+    except ImportError:
+        observed = contingency_table.values.astype(float)
+        row_sums = observed.sum(axis=1, keepdims=True)
+        col_sums = observed.sum(axis=0, keepdims=True)
+        n = observed.sum()
+        if n == 0:
+            return {"chi2": 0.0, "p": 1.0, "dof": 0, "expected": observed, "method": "numpy"}
+        expected = row_sums * col_sums / n
+        dof = (observed.shape[0] - 1) * (observed.shape[1] - 1)
+        with np.errstate(divide="ignore", invalid="ignore"):
+            chi2 = float(np.nansum((observed - expected) ** 2 / np.where(expected == 0, 1, expected)))
+        try:
+            from scipy.stats import chi2 as chi2_dist
+            p = float(1 - chi2_dist.cdf(chi2, dof)) if dof > 0 else 1.0
+        except ImportError:
+            p = 0.0 if chi2 > 20 else 1.0
+        return {"chi2": chi2, "p": p, "dof": dof, "expected": expected, "method": "numpy"}
+
+
+def _cramers_v_from_chi2(chi2: float, n: float, min_dim: int) -> float:
+    if min_dim == 0 or n == 0:
+        return 0.0
+    return float(np.sqrt(chi2 / (n * min_dim)))
+
+
+def _categorical_correlation(df: pd.DataFrame, col_a: str, col_b: str, intent: dict) -> dict[str, Any]:
+    ct = pd.crosstab(df[col_a], df[col_b])
+    n = int(ct.sum().sum())
+
+    stats = _chi_square_test(ct)
+    chi2, p_value, dof = stats["chi2"], stats["p"], stats["dof"]
+
+    min_dim = min(ct.shape[0], ct.shape[1]) - 1
+    v = _cramers_v_from_chi2(chi2, n, min_dim)
+    strength = "strong" if v > 0.5 else "moderate" if v > 0.25 else "weak"
+
+    significant = p_value < 0.05
+    sig_text = "statistically significant" if significant else "not statistically significant"
+
+    # -- Build answer text --
+    answer_parts = [
+        f"Relationship between {col_a} and {col_b}:",
+        "",
+        f"1. Chi-Square Test:",
+        f"   Chi-Square statistic = {chi2:,.2f}",
+        f"   Degrees of freedom = {dof}",
+        f"   P-value = {p_value:.4f}" if p_value >= 0.0001 else f"   P-value < 0.0001",
+        f"   Result: The relationship is {sig_text} (p {'<' if significant else '>'} 0.05).",
+        "",
+        f"2. Cramér's V (Association Strength):",
+        f"   Cramér's V = {v:.3f} ({strength} association)",
+        f"   Scale: 0 = no association, 1 = perfect association",
+        "",
+        f"3. Contingency Table:",
+        f"   {ct.shape[0]} {col_a} values × {ct.shape[1]} {col_b} values across {n:,} records.",
+    ]
+    answer = "\n".join(answer_parts)
+
+    # -- Cross-tab table for the response --
+    ct_flat = ct.reset_index()
+    ct_flat.columns.name = None
+
+    # -- Stacked data for chart --
+    stacked = ct.stack().reset_index()
+    stacked.columns = [col_a, col_b, "count"]
+    stacked = stacked.sort_values("count", ascending=False)
+
+    chart = {
+        "type": "bar",
+        "title": f"{col_a} vs {col_b} Distribution",
+        "x": col_a,
+        "y": "count",
+        "data": _records(stacked.head(50)),
+    }
+
+    # -- Insights --
+    insights = []
+
+    if significant:
+        insights.append(
+            f"Significant relationship found (p={p_value:.4f}): {col_a} and {col_b} are NOT independent."
+        )
+    else:
+        insights.append(
+            f"No significant relationship (p={p_value:.4f}): {col_a} and {col_b} appear to be independent."
+        )
+
+    insights.append(f"Cramér's V = {v:.3f} - {strength} association strength.")
+
+    top_combo = stacked.iloc[0] if not stacked.empty else None
+    if top_combo is not None:
+        insights.append(
+            f"Most common combination: {top_combo[col_a]} + {top_combo[col_b]} ({int(top_combo['count']):,} orders)."
+        )
+
+    least_combo = stacked.iloc[-1] if len(stacked) > 1 else None
+    if least_combo is not None and int(least_combo["count"]) > 0:
+        insights.append(
+            f"Least common combination: {least_combo[col_a]} + {least_combo[col_b]} ({int(least_combo['count']):,} orders)."
+        )
+
+    # Size-specific insights: which category dominates each size
+    for size_val in ct.index:
+        row = ct.loc[size_val]
+        top_cat = row.idxmax()
+        top_count = int(row.max())
+        total_for_size = int(row.sum())
+        if total_for_size > 0:
+            pct = top_count / total_for_size * 100
+            insights.append(
+                f"For {col_a}={size_val}: {top_cat} is most popular ({pct:.1f}%, {top_count:,} of {total_for_size:,})."
+            )
+
+    intent["confidence"] = 0.95
+    return {
+        "answer": answer,
+        "table": _records(ct_flat),
+        "columns": list(ct_flat.columns),
+        "charts": [chart],
+        "insights": insights,
+        "sql": f'SELECT "{col_a}", "{col_b}", COUNT(*) AS count FROM data GROUP BY "{col_a}", "{col_b}" ORDER BY count DESC',
+        "confidence": 0.95,
+    }
+
+
+# ---------------------------------------------------------------------------
+#  Time column detection & extraction
+# ---------------------------------------------------------------------------
+
+def _find_time_column(df: pd.DataFrame) -> str | None:
+    for col in df.columns:
+        cl = col.lower()
+        if any(w in cl for w in ("time", "hour")):
+            return col
+    return None
+
+
+def _find_date_column(df: pd.DataFrame) -> str | None:
+    date = _date_cols(df)
+    if date:
+        return date[0]
+    for col in df.columns:
+        cl = col.lower()
+        if any(w in cl for w in ("date", "created", "updated", "day")):
+            return col
+    return None
+
+
+DAY_ORDER = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+MONTH_ORDER = ["January", "February", "March", "April", "May", "June",
+               "July", "August", "September", "October", "November", "December"]
+
+
+def _extract_hour(series: pd.Series) -> pd.Series | None:
+    if pd.api.types.is_datetime64_any_dtype(series):
+        return series.dt.hour
+
+    as_dt = pd.to_datetime(series, errors="coerce", format="%H:%M:%S")
+    if as_dt.notna().sum() >= len(series) * 0.5:
+        return as_dt.dt.hour
+
+    as_dt2 = pd.to_datetime(series, errors="coerce", infer_datetime_format=True)
+    if as_dt2.notna().sum() >= len(series) * 0.5:
+        return as_dt2.dt.hour
+
+    hour_extracted = series.astype(str).str.extract(r'(\d{1,2}):\d{2}', expand=False)
+    as_num = pd.to_numeric(hour_extracted, errors="coerce")
+    if as_num.notna().sum() >= len(series) * 0.5:
+        return as_num.astype("Int64")
+
+    return None
+
+
+def _extract_dayofweek(series: pd.Series) -> pd.Series | None:
+    if pd.api.types.is_datetime64_any_dtype(series):
+        return series.dt.day_name()
+    as_dt = pd.to_datetime(series, errors="coerce", dayfirst=False)
+    if as_dt.notna().sum() >= len(series) * 0.5:
+        return as_dt.dt.day_name()
+    return None
+
+
+def _extract_month(series: pd.Series) -> pd.Series | None:
+    if pd.api.types.is_datetime64_any_dtype(series):
+        return series.dt.month_name()
+    as_dt = pd.to_datetime(series, errors="coerce", dayfirst=False)
+    if as_dt.notna().sum() >= len(series) * 0.5:
+        return as_dt.dt.month_name()
+    return None
 
 
 # ---------------------------------------------------------------------------
@@ -714,6 +966,192 @@ def _generate_sql(intent: dict, table_name: str = "data") -> str | None:
 
 
 # ---------------------------------------------------------------------------
+#  Time Analysis Execution
+# ---------------------------------------------------------------------------
+
+def _execute_time_analysis(df: pd.DataFrame, intent: dict, metric_col: str | None) -> dict[str, Any]:
+    granularity = intent["params"].get("granularity", "hour")
+    q_lower = intent.get("_question", "").lower()
+    is_ascending = any(w in q_lower for w in ("slowest", "quietest", "least busy"))
+
+    if granularity == "hour":
+        time_col = _find_time_column(df)
+        if not time_col:
+            date_col = _find_date_column(df)
+            if date_col:
+                time_col = date_col
+        if not time_col:
+            return _ambiguous_response(df, intent, "No time/hour column found in the dataset.")
+
+        hours = _extract_hour(df[time_col])
+        if hours is None:
+            return _ambiguous_response(df, intent,
+                f"Could not extract hours from column '{time_col}'. Expected time format like HH:MM:SS.")
+
+        df_work = df.copy()
+        df_work["_hour"] = hours
+        label_col, label_name = "_hour", "hour"
+
+    elif granularity == "dayofweek":
+        date_col = _find_date_column(df)
+        if not date_col:
+            return _ambiguous_response(df, intent, "No date column found for day-of-week analysis.")
+        days = _extract_dayofweek(df[date_col])
+        if days is None:
+            return _ambiguous_response(df, intent,
+                f"Could not parse dates from column '{date_col}'.")
+        df_work = df.copy()
+        df_work["_dayofweek"] = days
+        label_col, label_name = "_dayofweek", "day_of_week"
+
+    elif granularity == "month":
+        date_col = _find_date_column(df)
+        if not date_col:
+            return _ambiguous_response(df, intent, "No date column found for month analysis.")
+        months = _extract_month(df[date_col])
+        if months is None:
+            return _ambiguous_response(df, intent,
+                f"Could not parse dates from column '{date_col}'.")
+        df_work = df.copy()
+        df_work["_month"] = months
+        label_col, label_name = "_month", "month"
+
+    else:
+        return _ambiguous_response(df, intent, f"Unsupported time granularity: {granularity}")
+
+    # Build grouped result
+    if metric_col and metric_col in df_work.columns:
+        grouped = df_work.groupby(label_col, dropna=False).agg(
+            order_count=(label_col, "size"),
+            total_value=(metric_col, "sum"),
+            avg_value=(metric_col, "mean"),
+        ).reset_index()
+        grouped.columns = [label_name, "order_count", f"total_{metric_col}", f"avg_{metric_col}"]
+        grouped[f"avg_{metric_col}"] = grouped[f"avg_{metric_col}"].round(2)
+        sort_col = "order_count"
+    else:
+        grouped = df_work.groupby(label_col, dropna=False).size().reset_index(name="order_count")
+        grouped.columns = [label_name, "order_count"]
+        sort_col = "order_count"
+
+    # Apply correct sort order for the granularity
+    if granularity == "hour":
+        grouped = grouped.sort_values(label_name)
+    elif granularity == "dayofweek":
+        day_rank = {d: i for i, d in enumerate(DAY_ORDER)}
+        grouped["_sort"] = grouped[label_name].map(day_rank)
+        grouped = grouped.sort_values("_sort").drop(columns=["_sort"])
+    elif granularity == "month":
+        month_rank = {m: i for i, m in enumerate(MONTH_ORDER)}
+        grouped["_sort"] = grouped[label_name].map(month_rank)
+        grouped = grouped.sort_values("_sort").drop(columns=["_sort"])
+
+    # Identify peak and slowest
+    peak_row = grouped.loc[grouped[sort_col].idxmax()]
+    slow_row = grouped.loc[grouped[sort_col].idxmin()]
+
+    # Sorted version for ranking table
+    ranked = grouped.sort_values(sort_col, ascending=not True)
+
+    # Format the answer
+    if granularity == "hour":
+        peak_label = f"{int(peak_row[label_name]):02d}:00 - {int(peak_row[label_name]):02d}:59"
+        slow_label = f"{int(slow_row[label_name]):02d}:00 - {int(slow_row[label_name]):02d}:59"
+    else:
+        peak_label = str(peak_row[label_name])
+        slow_label = str(slow_row[label_name])
+
+    total_orders = int(grouped[sort_col].sum())
+    peak_count = int(peak_row[sort_col])
+    slow_count = int(slow_row[sort_col])
+    peak_pct = (peak_count / total_orders * 100) if total_orders > 0 else 0
+
+    gran_label = {"hour": "Hour", "dayofweek": "Day of Week", "month": "Month"}[granularity]
+
+    answer_parts = [
+        f"Busiest {gran_label} Analysis ({total_orders:,} total orders):",
+        "",
+        f"Peak {gran_label}: {peak_label}",
+        f"  Orders: {peak_count:,} ({peak_pct:.1f}% of total)",
+    ]
+
+    if metric_col and f"total_{metric_col}" in grouped.columns:
+        peak_revenue = peak_row[f"total_{metric_col}"]
+        answer_parts.append(f"  Total {metric_col}: {_format_number(peak_revenue)}")
+
+    answer_parts += [
+        "",
+        f"Slowest {gran_label}: {slow_label}",
+        f"  Orders: {slow_count:,}",
+    ]
+
+    # Top 3 busiest
+    top3 = grouped.nlargest(3, sort_col)
+    answer_parts.append("")
+    answer_parts.append(f"Top 3 Busiest {gran_label}s:")
+    for i, (_, row) in enumerate(top3.iterrows(), 1):
+        if granularity == "hour":
+            lbl = f"{int(row[label_name]):02d}:00"
+        else:
+            lbl = str(row[label_name])
+        answer_parts.append(f"  {i}. {lbl} - {int(row[sort_col]):,} orders")
+
+    answer = "\n".join(answer_parts)
+
+    # Chart — line for hours (natural time order), bar for day/month
+    chart_type = "line" if granularity == "hour" else "bar"
+    chart_title = f"Orders by {gran_label}"
+    if granularity == "hour":
+        chart_x = grouped[label_name].apply(lambda h: f"{int(h):02d}:00")
+        chart_df = grouped.copy()
+        chart_df[label_name] = chart_x
+    else:
+        chart_df = grouped
+
+    chart = {
+        "type": chart_type,
+        "title": chart_title,
+        "x": label_name,
+        "y": sort_col,
+        "data": _records(chart_df),
+    }
+
+    # Insights
+    insights = [
+        f"The busiest {gran_label.lower()} is {peak_label} with {peak_count:,} orders ({peak_pct:.1f}% of total).",
+        f"The slowest {gran_label.lower()} is {slow_label} with {slow_count:,} orders.",
+    ]
+
+    if granularity == "hour" and len(grouped) > 5:
+        morning = grouped[(grouped[label_name] >= 6) & (grouped[label_name] < 12)][sort_col].sum()
+        afternoon = grouped[(grouped[label_name] >= 12) & (grouped[label_name] < 17)][sort_col].sum()
+        evening = grouped[(grouped[label_name] >= 17) & (grouped[label_name] < 22)][sort_col].sum()
+        night = total_orders - morning - afternoon - evening
+        insights.append(f"Morning (6-12): {int(morning):,} | Afternoon (12-17): {int(afternoon):,} | Evening (17-22): {int(evening):,} | Night: {int(night):,}")
+
+    if len(grouped) >= 3:
+        std = grouped[sort_col].std()
+        mean = grouped[sort_col].mean()
+        if mean > 0:
+            cv = std / mean
+            if cv > 0.5:
+                insights.append(f"High variation in order volume across {gran_label.lower()}s (CV={cv:.2f}).")
+            else:
+                insights.append(f"Relatively even distribution across {gran_label.lower()}s (CV={cv:.2f}).")
+
+    intent["confidence"] = 0.95
+    return {
+        "answer": answer,
+        "table": _records(ranked),
+        "columns": list(ranked.columns),
+        "charts": [chart],
+        "insights": insights,
+        "sql": f'SELECT EXTRACT({"HOUR" if granularity == "hour" else "DOW" if granularity == "dayofweek" else "MONTH"} FROM "{_find_time_column(df) or _find_date_column(df) or "time_col"}") AS {label_name}, COUNT(*) AS order_count FROM data GROUP BY {label_name} ORDER BY order_count DESC',
+        "confidence": 0.95,
+    }
+
+
+# ---------------------------------------------------------------------------
 #  Plan Execution
 # ---------------------------------------------------------------------------
 
@@ -724,6 +1162,10 @@ def _execute_intent(df: pd.DataFrame, intent: dict) -> dict[str, Any]:
     agg = intent["aggregation"]
     limit = intent.get("limit") or 10
     direction = intent["sort_direction"] == "desc"
+
+    # -- Time-of-day / Day-of-week / Month analysis --
+    if itype == "time_analysis":
+        return _execute_time_analysis(df, intent, metric_col)
 
     # -- Show Data (first N rows) --
     if itype == "show_data":
@@ -1040,12 +1482,46 @@ def _execute_intent(df: pd.DataFrame, intent: dict) -> dict[str, Any]:
     # -- Correlation --
     if itype == "correlation":
         numeric = _numeric_cols(df)
-        if len(intent["metric_cols"]) >= 2:
-            x, y = intent["metric_cols"][0], intent["metric_cols"][1]
+        categorical = _categorical_cols(df)
+        group_cols = intent["group_cols"]
+        metric_cols = intent["metric_cols"]
+
+        # Case 1: Two categorical columns → Cramér's V + cross-tabulation
+        if len(group_cols) >= 2:
+            cat_x, cat_y = group_cols[0], group_cols[1]
+            return _categorical_correlation(df, cat_x, cat_y, intent)
+
+        # Case 2: One categorical mentioned + one numeric → grouped analysis
+        if len(group_cols) == 1 and len(metric_cols) >= 1:
+            cat_col, num_col = group_cols[0], metric_cols[0]
+            grouped = df.groupby(cat_col, dropna=False)[num_col].agg(["mean", "median", "count"]).reset_index()
+            grouped.columns = [cat_col, f"avg_{num_col}", f"median_{num_col}", "count"]
+            grouped = grouped.sort_values(f"avg_{num_col}", ascending=False)
+            chart = _select_chart("group_analysis", cat_col, f"avg_{num_col}", grouped)
+            return _build_response(
+                f"Relationship between {cat_col} and {num_col}:",
+                grouped, intent, df, chart=chart
+            )
+
+        # Case 3: No metric cols detected but two categorical columns inferable
+        if not metric_cols and len(group_cols) < 2 and len(categorical) >= 2:
+            q_lower = intent.get("_question", "").lower()
+            matched_cats = []
+            for col in categorical:
+                col_lower = col.lower()
+                col_spaced = col.lower().replace("_", " ")
+                if col_lower in q_lower or col_spaced in q_lower:
+                    matched_cats.append(col)
+            if len(matched_cats) >= 2:
+                return _categorical_correlation(df, matched_cats[0], matched_cats[1], intent)
+
+        # Case 4: Two numeric columns → Pearson correlation
+        if len(metric_cols) >= 2:
+            x, y = metric_cols[0], metric_cols[1]
         elif len(numeric) >= 2:
             x, y = numeric[0], numeric[1]
         else:
-            return _ambiguous_response(df, intent, "Need at least 2 numeric columns for correlation analysis.")
+            return _ambiguous_response(df, intent, "Need at least 2 columns for correlation analysis.")
 
         corr = df[[x, y]].corr().iloc[0, 1]
         strength = "strong" if abs(corr) > 0.6 else "moderate" if abs(corr) > 0.3 else "weak"
@@ -1059,17 +1535,10 @@ def _execute_intent(df: pd.DataFrame, intent: dict) -> dict[str, Any]:
 
     # -- Filter --
     if itype == "filter":
-        return _build_response(
-            f"Showing filtered data ({len(df):,} rows).",
-            df.head(100), intent, df
-        )
+        return _llm_smart_analysis(df, intent)
 
-    # -- AI Analysis (GPT-powered reasoning) --
-    if itype == "ai_analysis":
-        return _llm_fallback(df, intent)
-
-    # -- Fallback: try LLM --
-    return _llm_fallback(df, intent)
+    # -- AI Analysis / Advanced Analysis / Fallback --
+    return _llm_smart_analysis(df, intent)
 
 
 # ---------------------------------------------------------------------------
@@ -1114,8 +1583,49 @@ def _ambiguous_response(df: pd.DataFrame, intent: dict, message: str) -> dict[st
 
 
 # ---------------------------------------------------------------------------
-#  LLM fallback
+#  LLM Smart Analysis Engine (code generation + execution)
 # ---------------------------------------------------------------------------
+
+_CODE_GEN_SYSTEM = """You are an expert data analyst. Given a dataset profile and a user question, generate Python pandas code to answer it precisely.
+
+Return ONLY valid JSON with these keys:
+{
+  "answer": "Clear 2-5 sentence answer with specific numbers and findings",
+  "code": "Python code string",
+  "chart_type": "bar|line|pie|scatter|heatmap|none",
+  "chart_x": "column_name_or_null",
+  "chart_y": "column_name_or_null",
+  "chart_title": "Title for the chart",
+  "insights": ["insight1", "insight2", "insight3"]
+}
+
+CODE RULES:
+- The DataFrame is already loaded as `df`. Do NOT redefine it.
+- Available: pandas as `pd`, numpy as `np`, scipy.stats as `stats`
+- Store the main result table in `result_df` (must be a pd.DataFrame)
+- Store key numeric findings in `findings` (a dict)
+- Do NOT use: print, import, open, exec, eval, __import__, os, sys, subprocess
+- Do NOT modify the original `df` — use df.copy() if needed
+- Handle NaN/missing values gracefully
+- Round floats to 2 decimal places
+- For dates stored as strings, parse them with pd.to_datetime(errors='coerce')
+- For time strings like "HH:MM:SS", extract hour with .str.split(':').str[0].astype(int)
+
+ANALYSIS PATTERNS:
+- Statistical tests: compute test statistic + p-value, interpret significance at alpha=0.05
+- Scenario/what-if: show before vs after comparison with absolute and percentage change
+- Pareto: sort descending, compute cumulative %, mark the 80% cutoff
+- Market basket: group by order_id, find item co-occurrences, compute support/confidence
+- Correlation: use .corr() for numeric, chi2_contingency for categorical
+- Forecasting: use simple linear trend or moving average extrapolation
+- Segmentation: use pd.qcut or pd.cut for quantile-based grouping
+- Anomaly detection: use IQR method (Q1-1.5*IQR to Q3+1.5*IQR)
+- Weighted scoring: normalize each metric 0-1, apply weights, compute composite score
+- Weekday vs weekend: parse dates, use .dt.dayofweek (0=Mon, 5-6=weekend)
+
+Always produce a result_df even for single-value answers (wrap in a DataFrame).
+Always quantify: include counts, percentages, p-values, dollar amounts where applicable."""
+
 
 def _client():
     key = settings.OPENAI_API_KEY
@@ -1123,55 +1633,250 @@ def _client():
         return None
     try:
         from openai import OpenAI
-        return OpenAI(api_key=key, timeout=12.0, max_retries=0)
+        return OpenAI(api_key=key, timeout=30.0, max_retries=1)
     except Exception:
         return None
 
 
-def _dataset_profile(df: pd.DataFrame) -> dict[str, Any]:
+def _build_detailed_profile(df: pd.DataFrame) -> dict[str, Any]:
+    profile: dict[str, Any] = {"row_count": int(len(df)), "columns": {}}
+    for col in df.columns:
+        info: dict[str, Any] = {
+            "dtype": str(df[col].dtype),
+            "non_null": int(df[col].notna().sum()),
+            "unique": int(df[col].nunique()),
+        }
+        if pd.api.types.is_numeric_dtype(df[col]):
+            info["min"] = _json_safe(df[col].min())
+            info["max"] = _json_safe(df[col].max())
+            info["mean"] = _json_safe(round(float(df[col].mean()), 2))
+            info["std"] = _json_safe(round(float(df[col].std()), 2))
+        else:
+            try:
+                top = df[col].value_counts(dropna=True).head(8)
+                info["top_values"] = {str(k): int(v) for k, v in top.items()}
+            except TypeError:
+                info["top_values"] = {}
+        profile["columns"][col] = info
+    profile["sample_rows"] = _records(df.head(5))
+    return profile
+
+
+_DANGEROUS = re.compile(
+    r'\b(__import__|exec|eval|compile|globals|locals|getattr|setattr|delattr'
+    r'|__subclasses__|__builtins__|__class__|__bases__'
+    r'|os\.|sys\.|subprocess|shutil|pathlib|open\s*\(|socket|requests)\b'
+)
+
+
+def _safe_execute(code: str, df: pd.DataFrame) -> dict[str, Any]:
+    if _DANGEROUS.search(code):
+        return {"error": "Code contains disallowed operations."}
+
+    safe_builtins = {
+        "True": True, "False": False, "None": None,
+        "abs": abs, "all": all, "any": any, "bool": bool,
+        "dict": dict, "enumerate": enumerate, "filter": filter,
+        "float": float, "frozenset": frozenset, "int": int,
+        "isinstance": isinstance, "len": len, "list": list,
+        "map": map, "max": max, "min": min, "print": lambda *a, **k: None,
+        "range": range, "reversed": reversed, "round": round,
+        "set": set, "slice": slice, "sorted": sorted, "str": str,
+        "sum": sum, "tuple": tuple, "type": type, "zip": zip,
+        "ValueError": ValueError, "TypeError": TypeError,
+        "KeyError": KeyError, "IndexError": IndexError,
+        "ZeroDivisionError": ZeroDivisionError,
+        "Exception": Exception,
+    }
+
+    namespace: dict[str, Any] = {
+        "__builtins__": safe_builtins,
+        "pd": pd,
+        "np": np,
+        "df": df.copy(),
+        "result_df": pd.DataFrame(),
+        "findings": {},
+    }
+
+    try:
+        from scipy import stats as scipy_stats
+        namespace["stats"] = scipy_stats
+    except ImportError:
+        pass
+
+    try:
+        exec(code, namespace)
+    except Exception as exc:
+        return {"error": f"Code execution error: {exc}"}
+
+    result_df = namespace.get("result_df", pd.DataFrame())
+    if not isinstance(result_df, pd.DataFrame):
+        try:
+            result_df = pd.DataFrame(result_df) if result_df is not None else pd.DataFrame()
+        except Exception:
+            result_df = pd.DataFrame()
+
     return {
-        "row_count": int(len(df)),
-        "columns": list(df.columns),
-        "dtypes": df.dtypes.astype(str).to_dict(),
-        "numeric_columns": _numeric_cols(df),
-        "categorical_columns": _categorical_cols(df),
-        "date_columns": _date_cols(df),
-        "sample": _records(df.head(5)),
+        "result_df": result_df,
+        "findings": namespace.get("findings", {}),
     }
 
 
-def _llm_fallback(df: pd.DataFrame, intent: dict) -> dict[str, Any]:
+def _llm_smart_analysis(df: pd.DataFrame, intent: dict) -> dict[str, Any]:
     client = _client()
     if not client:
-        return _ambiguous_response(df, intent,
-            "I couldn't determine how to answer this question. Try being more specific about which columns to analyze.")
+        return _no_answer_response(intent)
 
     question = intent.get("_question", "Analyze this data")
-    profile = _dataset_profile(df)
+    profile = _build_detailed_profile(df)
 
-    response = client.chat.completions.create(
-        model=settings.OPENAI_MODEL,
-        messages=[
-            {"role": "system", "content": (
-                "You are a data analyst. Answer the question using ONLY the provided dataset profile and sample. "
-                "Be specific and quantitative. If you can't answer from the data, say so."
-            )},
-            {"role": "user", "content": (
-                f"Dataset profile:\n{json.dumps(profile, default=str)}\n\nQuestion: {question}"
-            )},
-        ],
-        temperature=0.2,
-        max_tokens=500,
-    )
-    answer = (response.choices[0].message.content or "").strip()
+    try:
+        response = client.chat.completions.create(
+            model=settings.OPENAI_MODEL,
+            messages=[
+                {"role": "system", "content": _CODE_GEN_SYSTEM},
+                {"role": "user", "content": (
+                    f"Dataset profile:\n{json.dumps(profile, default=str)}\n\n"
+                    f"Question: {question}"
+                )},
+            ],
+            response_format={"type": "json_object"},
+            temperature=0.1,
+            max_tokens=2000,
+        )
+    except Exception as exc:
+        return _no_answer_response(intent, f"LLM request failed: {exc}")
+
+    raw = (response.choices[0].message.content or "").strip()
+    try:
+        parsed = json.loads(raw)
+    except json.JSONDecodeError:
+        return _no_answer_response(intent, "Failed to parse LLM response.")
+
+    llm_answer = parsed.get("answer", "")
+    code = parsed.get("code", "")
+    chart_type = parsed.get("chart_type", "none")
+    chart_x = parsed.get("chart_x")
+    chart_y = parsed.get("chart_y")
+    chart_title = parsed.get("chart_title", "Analysis Result")
+    llm_insights = parsed.get("insights", [])
+
+    # Execute the generated code
+    if code:
+        exec_result = _safe_execute(code, df)
+        if "error" in exec_result:
+            # Retry with a simpler prompt
+            try:
+                retry = client.chat.completions.create(
+                    model=settings.OPENAI_MODEL,
+                    messages=[
+                        {"role": "system", "content": _CODE_GEN_SYSTEM},
+                        {"role": "user", "content": (
+                            f"Dataset profile:\n{json.dumps(profile, default=str)}\n\n"
+                            f"Question: {question}\n\n"
+                            f"Previous code failed with: {exec_result['error']}\n"
+                            f"Generate simpler, more robust code. Use try/except for edge cases."
+                        )},
+                    ],
+                    response_format={"type": "json_object"},
+                    temperature=0.1,
+                    max_tokens=2000,
+                )
+                retry_parsed = json.loads(retry.choices[0].message.content or "{}")
+                retry_code = retry_parsed.get("code", "")
+                if retry_code:
+                    exec_result = _safe_execute(retry_code, df)
+                    if "error" not in exec_result:
+                        llm_answer = retry_parsed.get("answer", llm_answer)
+                        llm_insights = retry_parsed.get("insights", llm_insights)
+                        chart_type = retry_parsed.get("chart_type", chart_type)
+                        chart_x = retry_parsed.get("chart_x", chart_x)
+                        chart_y = retry_parsed.get("chart_y", chart_y)
+                        chart_title = retry_parsed.get("chart_title", chart_title)
+            except Exception:
+                pass
+
+            if "error" in exec_result:
+                return {
+                    "answer": llm_answer or f"I analyzed your question but couldn't execute the computation. {exec_result.get('error', '')}",
+                    "table": [],
+                    "columns": [],
+                    "charts": [],
+                    "insights": llm_insights if llm_insights else [],
+                    "sql": None,
+                    "confidence": 0.5,
+                }
+
+        result_df = exec_result.get("result_df", pd.DataFrame())
+        findings = exec_result.get("findings", {})
+
+        # Enrich the answer with computed findings
+        if findings and not llm_answer:
+            parts = []
+            for k, v in findings.items():
+                if isinstance(v, float):
+                    parts.append(f"{k}: {v:,.2f}")
+                else:
+                    parts.append(f"{k}: {v}")
+            llm_answer = "Analysis Results:\n" + "\n".join(parts)
+
+    else:
+        result_df = pd.DataFrame()
+        findings = {}
+
+    # Build chart
+    charts = []
+    if chart_type and chart_type != "none" and not result_df.empty:
+        chart_data = _records(result_df.head(50))
+        if chart_x and chart_y:
+            charts = [{
+                "type": chart_type,
+                "title": chart_title,
+                "x": chart_x,
+                "y": chart_y,
+                "data": chart_data,
+            }]
+        elif chart_x and chart_type == "pie":
+            y_candidates = [c for c in result_df.columns if c != chart_x]
+            if y_candidates:
+                charts = [{
+                    "type": "pie",
+                    "title": chart_title,
+                    "x": chart_x,
+                    "y": y_candidates[0],
+                    "data": chart_data,
+                }]
+
+    table = _records(result_df.head(200)) if not result_df.empty else []
+    columns = list(result_df.columns) if not result_df.empty else []
+
+    intent["confidence"] = 0.85
+
     return {
-        "answer": answer,
-        "table": _records(df.head(20)),
-        "columns": list(df.columns),
-        "charts": [],
-        "insights": [answer],
+        "answer": llm_answer,
+        "table": table,
+        "columns": columns,
+        "charts": charts,
+        "insights": llm_insights if isinstance(llm_insights, list) else [llm_insights],
         "sql": None,
-        "confidence": 0.6,
+        "confidence": 0.85,
+    }
+
+
+def _no_answer_response(intent: dict, detail: str = "") -> dict[str, Any]:
+    question = intent.get("_question", "your question")
+    msg = f"I couldn't analyze: \"{question}\""
+    if detail:
+        msg += f"\n\nReason: {detail}"
+    msg += "\n\nPlease try rephrasing your question or being more specific about which columns to analyze."
+    return {
+        "answer": msg,
+        "table": [],
+        "columns": [],
+        "charts": [],
+        "insights": [],
+        "sql": None,
+        "confidence": 0.1,
     }
 
 
