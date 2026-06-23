@@ -209,7 +209,16 @@ export default function ExcelTool({ onBack, chatContext }) {
       if (res.excerpts !== undefined) {
         setMessages((prev) => [
           ...prev,
-          { role: "assistant", type: "text", answer: res.answer, excerpts: res.excerpts || [], question: q },
+          {
+            role: "assistant", type: "text", answer: res.answer, excerpts: res.excerpts || [], question: q,
+            executive_summary: res.executive_summary || null,
+            key_findings: res.key_findings || [],
+            risks: res.risks || [],
+            opportunities: res.opportunities || [],
+            recommendations: res.recommendations || [],
+            confidence: res.confidence || null,
+            confidence_reason: res.confidence_reason || null,
+          },
         ]);
       } else {
         setMessages((prev) => [
@@ -221,6 +230,11 @@ export default function ExcelTool({ onBack, chatContext }) {
             metric_used: res.metric_used || null, group_by: res.group_by || null,
             aggregation: res.aggregation || null, reasoning: res.reasoning || [],
             planner: res.planner || null,
+            executive_summary: res.executive_summary || null,
+            business_impact: res.business_impact || null,
+            recommendations: res.recommendations || [],
+            chart_narrative: res.chart_narrative || null,
+            confidence_explanation: res.confidence_explanation || null,
           },
         ]);
       }
@@ -527,16 +541,97 @@ function ChatBubble({ msg, sourceId }) {
     );
   }
 
-  // Text-based response (PDF, DOCX)
+  // Text-based response (PDF, DOCX) — AI Document Intelligence
   if (msg.type === "text") {
     return (
-      <div className="flex justify-start">
-        <div className="max-w-[90%] rounded-2xl bg-surface-1 border border-border p-4 space-y-3">
-          <div className="text-sm text-ink leading-relaxed whitespace-pre-wrap">{msg.answer}</div>
+      <div className="flex justify-start w-full">
+        <div className="max-w-full w-full rounded-2xl bg-surface-1 border border-border p-4 space-y-3">
+
+          {/* Direct Answer */}
+          <div className="flex items-start justify-between gap-3">
+            <div className="text-sm text-ink leading-relaxed whitespace-pre-wrap flex-1">{msg.answer}</div>
+            {msg.confidence && (
+              <span className={`shrink-0 text-xs font-medium px-2 py-0.5 rounded-full ${
+                msg.confidence === "High" ? "bg-emerald-100 text-emerald-700" :
+                msg.confidence === "Medium" ? "bg-amber-100 text-amber-700" :
+                "bg-red-100 text-red-700"
+              }`}>{msg.confidence} Confidence</span>
+            )}
+          </div>
+
+          {/* Executive Summary */}
+          {msg.executive_summary && (
+            <div className="rounded-xl bg-slate-50 border border-slate-200 p-3">
+              <h4 className="text-xs font-semibold text-slate-600 uppercase tracking-wide mb-1.5">Executive Summary</h4>
+              <p className="text-sm text-slate-800 leading-relaxed">{msg.executive_summary}</p>
+            </div>
+          )}
+
+          {/* Key Findings */}
+          {msg.key_findings?.length > 0 && (
+            <div className="rounded-xl bg-brand/10 border border-blue-100 p-3">
+              <h4 className="text-xs font-semibold text-brand uppercase tracking-wide mb-1.5">Key Findings</h4>
+              <ul className="space-y-1">
+                {msg.key_findings.map((item, idx) => (
+                  <li key={idx} className="text-sm text-blue-800 flex items-start gap-1.5">
+                    <span className="text-blue-400 mt-0.5 text-xs">●</span>
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {/* Risks */}
+          {msg.risks?.length > 0 && (
+            <div className="rounded-xl bg-red-50 border border-red-200 p-3">
+              <h4 className="text-xs font-semibold text-red-700 uppercase tracking-wide mb-1.5">Risks Identified</h4>
+              <ul className="space-y-1">
+                {msg.risks.map((item, idx) => (
+                  <li key={idx} className="text-sm text-red-800 flex items-start gap-1.5">
+                    <span className="text-red-400 mt-0.5 text-xs">&#x26A0;</span>
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {/* Opportunities */}
+          {msg.opportunities?.length > 0 && (
+            <div className="rounded-xl bg-emerald-50 border border-emerald-200 p-3">
+              <h4 className="text-xs font-semibold text-emerald-700 uppercase tracking-wide mb-1.5">Opportunities</h4>
+              <ul className="space-y-1">
+                {msg.opportunities.map((item, idx) => (
+                  <li key={idx} className="text-sm text-emerald-800 flex items-start gap-1.5">
+                    <span className="text-emerald-500 mt-0.5 text-xs">&#x2191;</span>
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {/* Recommendations */}
+          {msg.recommendations?.length > 0 && (
+            <div className="rounded-xl bg-amber-50 border border-amber-200 p-3">
+              <h4 className="text-xs font-semibold text-amber-700 uppercase tracking-wide mb-1.5">Recommendations</h4>
+              <ul className="space-y-1">
+                {msg.recommendations.map((rec, idx) => (
+                  <li key={idx} className="text-sm text-amber-900 flex items-start gap-1.5">
+                    <span className="text-amber-500 mt-0.5 text-xs font-bold">{idx + 1}.</span>
+                    {rec}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {/* Source Evidence */}
           {msg.excerpts?.length > 0 && (
             <details className="group">
               <summary className="text-xs font-semibold text-muted uppercase tracking-wide cursor-pointer hover:text-ink">
-                Source References ({msg.excerpts.length})
+                Source Evidence ({msg.excerpts.length} references)
               </summary>
               <div className="mt-2 space-y-2">
                 {msg.excerpts.map((exc, i) => (
@@ -548,6 +643,17 @@ function ChatBubble({ msg, sourceId }) {
               </div>
             </details>
           )}
+
+          {/* Confidence Explanation */}
+          {msg.confidence_reason && (
+            <details className="group">
+              <summary className="text-xs font-semibold text-muted uppercase tracking-wide cursor-pointer hover:text-ink">
+                Confidence: {msg.confidence}
+              </summary>
+              <p className="mt-1 text-xs text-gray-500">{msg.confidence_reason}</p>
+            </details>
+          )}
+
           {msg.question && <DownloadButtons sourceId={sourceId} question={msg.question} />}
         </div>
       </div>
@@ -563,21 +669,29 @@ function ChatBubble({ msg, sourceId }) {
     );
   }
 
-  // ─── Tabular response ───
+  // ─── Tabular response (Business Analytics Copilot) ───
   return (
     <div className="flex justify-start w-full">
       <div className="max-w-full w-full rounded-2xl bg-surface-1 border border-border p-4 space-y-3">
 
-        {/* Answer + confidence */}
+        {/* 1. Direct Answer + Confidence */}
         <div className="flex items-start justify-between gap-3">
           <div className="text-sm text-ink leading-relaxed whitespace-pre-wrap flex-1">{msg.answer}</div>
           <ConfidenceBadge score={msg.confidence} />
         </div>
 
-        {/* Insights */}
+        {/* 2. Executive Summary */}
+        {msg.executive_summary && (
+          <div className="rounded-xl bg-slate-50 border border-slate-200 p-3">
+            <h4 className="text-xs font-semibold text-slate-600 uppercase tracking-wide mb-1.5">Executive Summary</h4>
+            <p className="text-sm text-slate-800 leading-relaxed">{msg.executive_summary}</p>
+          </div>
+        )}
+
+        {/* 3. Key Insights */}
         {msg.insights?.length > 0 && (
           <div className="rounded-xl bg-brand/10 border border-blue-100 p-3">
-            <h4 className="text-xs font-semibold text-brand uppercase tracking-wide mb-1.5">Insights</h4>
+            <h4 className="text-xs font-semibold text-brand uppercase tracking-wide mb-1.5">Key Findings</h4>
             <ul className="space-y-1">
               {msg.insights.map((item, idx) => (
                 <li key={idx} className="text-sm text-blue-800 flex items-start gap-1.5">
@@ -589,48 +703,98 @@ function ChatBubble({ msg, sourceId }) {
           </div>
         )}
 
-        {/* Charts */}
+        {/* 4. Business Impact */}
+        {msg.business_impact && (
+          <div className="rounded-xl bg-amber-50 border border-amber-200 p-3">
+            <h4 className="text-xs font-semibold text-amber-700 uppercase tracking-wide mb-1.5">Business Impact</h4>
+            <p className="text-sm text-amber-900 leading-relaxed">{msg.business_impact}</p>
+          </div>
+        )}
+
+        {/* 5. Recommendations */}
+        {msg.recommendations?.length > 0 && (
+          <div className="rounded-xl bg-emerald-50 border border-emerald-200 p-3">
+            <h4 className="text-xs font-semibold text-emerald-700 uppercase tracking-wide mb-1.5">Recommendations</h4>
+            <ul className="space-y-1">
+              {msg.recommendations.map((rec, idx) => (
+                <li key={idx} className="text-sm text-emerald-800 flex items-start gap-1.5">
+                  <span className="text-emerald-500 mt-0.5 text-xs font-bold">{idx + 1}.</span>
+                  {rec}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {/* 6. Charts + Chart Narrative */}
         {msg.charts?.length > 0 && (
-          <div className="space-y-3">
+          <div className="space-y-2">
             {msg.charts.map((chart, idx) => (
               <AutoChart key={idx} spec={chart} height={260} />
             ))}
+            {msg.chart_narrative && (
+              <p className="text-xs text-muted italic px-1">{msg.chart_narrative}</p>
+            )}
           </div>
         )}
 
-        {/* Table */}
+        {/* 7. Supporting Data Table */}
         {msg.table?.length > 0 && (
-          <div className="overflow-auto rounded-lg border border-border max-h-[300px]">
-            <table className="min-w-full text-sm">
-              <thead className="bg-surface-2 sticky top-0 z-10">
-                <tr>
-                  {Object.keys(msg.table[0]).map((col) => (
-                    <th key={col} scope="col" className="px-3 py-2 text-left text-xs font-semibold text-muted whitespace-nowrap">{col}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {msg.table.map((row, idx) => (
-                  <tr key={idx} className="border-t border-border hover:bg-surface-1">
-                    {Object.values(row).map((value, i) => (
-                      <td key={i} className="px-3 py-2 text-ink whitespace-nowrap">
-                        {value === null ? <span className="text-muted-2 italic">null</span> : String(value)}
-                      </td>
+          <details className="group">
+            <summary className="text-xs font-semibold text-muted uppercase tracking-wide cursor-pointer hover:text-ink">
+              Supporting Data ({msg.table.length} rows)
+            </summary>
+            <div className="mt-2 overflow-auto rounded-lg border border-border max-h-[300px]">
+              <table className="min-w-full text-sm">
+                <thead className="bg-surface-2 sticky top-0 z-10">
+                  <tr>
+                    {Object.keys(msg.table[0]).map((col) => (
+                      <th key={col} scope="col" className="px-3 py-2 text-left text-xs font-semibold text-muted whitespace-nowrap">{col}</th>
                     ))}
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {msg.table.map((row, idx) => (
+                    <tr key={idx} className="border-t border-border hover:bg-surface-1">
+                      {Object.values(row).map((value, i) => (
+                        <td key={i} className="px-3 py-2 text-ink whitespace-nowrap">
+                          {value === null ? <span className="text-muted-2 italic">null</span> : String(value)}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </details>
         )}
 
-        {/* Analysis Planner */}
-        {(msg.planner || msg.metric_used || msg.reasoning?.length > 0) && (
+        {/* 8. Confidence Explanation */}
+        {msg.confidence_explanation && (
+          <details className="group">
+            <summary className="text-xs font-semibold text-muted uppercase tracking-wide cursor-pointer hover:text-ink">
+              Confidence: {msg.confidence_explanation.level} ({msg.confidence_explanation.score}%)
+            </summary>
+            <div className="mt-2 rounded-lg bg-gray-50 border border-gray-200 p-3">
+              <ul className="space-y-0.5">
+                {msg.confidence_explanation.reasons?.map((reason, idx) => (
+                  <li key={idx} className="text-xs text-gray-600 flex items-start gap-1.5">
+                    <span className="text-gray-400 mt-0.5">&#x2713;</span>
+                    {reason}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </details>
+        )}
+
+        {/* Analysis Planner (Debug) */}
+        {(msg.planner || msg.metric_used) && (
           <details className="group">
             <summary className="text-xs font-semibold text-muted uppercase tracking-wide cursor-pointer hover:text-ink">
               Analysis Planner
             </summary>
-            <div className="mt-2 rounded-lg bg-emerald-50 border border-emerald-200 p-3 space-y-2">
+            <div className="mt-2 rounded-lg bg-slate-100 border border-slate-200 p-3 space-y-2">
               {msg.metric_used && (
                 <div className="flex flex-wrap gap-2">
                   <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-xs font-medium">
@@ -649,15 +813,15 @@ function ChatBubble({ msg, sourceId }) {
                 </div>
               )}
               {msg.planner?.filters?.length > 0 && (
-                <div className="text-xs text-emerald-700">
+                <div className="text-xs text-slate-600">
                   <span className="font-semibold">Filters:</span> {msg.planner.filters.join(" | ")}
                 </div>
               )}
               {msg.reasoning?.length > 0 && (
-                <ul className="space-y-0.5 pt-1 border-t border-emerald-200">
+                <ul className="space-y-0.5 pt-1 border-t border-slate-200">
                   {msg.reasoning.map((step, idx) => (
-                    <li key={idx} className="text-xs text-emerald-700 flex items-start gap-1.5">
-                      <span className="text-emerald-400 mt-0.5">&#x2192;</span>
+                    <li key={idx} className="text-xs text-slate-600 flex items-start gap-1.5">
+                      <span className="text-slate-400 mt-0.5">&#x2192;</span>
                       {step}
                     </li>
                   ))}

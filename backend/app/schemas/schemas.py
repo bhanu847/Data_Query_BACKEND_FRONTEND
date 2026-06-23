@@ -69,6 +69,12 @@ class ChartSpec(BaseModel):
     data: list[dict[str, Any]]
 
 
+class ConfidenceExplanation(BaseModel):
+    level: str = "Medium"
+    score: int = 50
+    reasons: list[str] = []
+
+
 class QueryResponse(BaseModel):
     answer: str
     table: list[dict[str, Any]]
@@ -81,6 +87,11 @@ class QueryResponse(BaseModel):
     aggregation: Optional[str] = None
     reasoning: list[str] = []
     planner: Optional[dict[str, Any]] = None
+    executive_summary: Optional[str] = None
+    business_impact: Optional[str] = None
+    recommendations: list[str] = []
+    chart_narrative: Optional[str] = None
+    confidence_explanation: Optional[ConfidenceExplanation] = None
 
 
 class ExcerptItem(BaseModel):
@@ -94,6 +105,13 @@ class TextQueryResponse(BaseModel):
     source_type: str
     page_count: int = 0
     total_characters: int = 0
+    executive_summary: Optional[str] = None
+    key_findings: list[str] = []
+    risks: list[str] = []
+    opportunities: list[str] = []
+    recommendations: list[str] = []
+    confidence: Optional[str] = None
+    confidence_reason: Optional[str] = None
 
 
 class DownloadQueryRequest(BaseModel):
@@ -124,13 +142,20 @@ class KpiCard(BaseModel):
     label: str
     value: str
     delta: Optional[str] = None
+    description: Optional[str] = None
+
+
+class DashboardChartSpec(ChartSpec):
+    insight: Optional[str] = None
 
 
 class DashboardResponse(BaseModel):
     title: str
     kpis: list[KpiCard]
-    charts: list[ChartSpec]
+    charts: list[DashboardChartSpec]
     insights: list[str]
+    executive_summary: Optional[str] = None
+    recommendations: list[str] = []
 
 
 class ColumnsResponse(BaseModel):

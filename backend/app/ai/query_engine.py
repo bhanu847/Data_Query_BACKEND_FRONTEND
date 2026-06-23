@@ -43,6 +43,7 @@ from app.ai.query_planner import (
     apply_filters,
     detect_calculation_type,
 )
+from app.ai.insight_engine import build_business_response
 
 # ---------------------------------------------------------------------------
 #  Column synonym map: user language -> likely column names
@@ -1920,20 +1921,37 @@ def _execute_distribution(df: pd.DataFrame, intent: dict) -> dict[str, Any]:
 def _build_response(answer: str, table: pd.DataFrame, intent: dict, df_full: pd.DataFrame,
                     chart: dict | None = None) -> dict[str, Any]:
     charts = [chart] if chart else []
-    insights = _generate_insights(table, intent, df_full)
 
     metric_col = intent["metric_cols"][0] if intent.get("metric_cols") else None
     group_col = intent["group_cols"][0] if intent.get("group_cols") else None
     reasoning = intent.get("reasoning", [])
+    question = intent.get("_question", "")
 
     pbm_intent = intent.get("pbm_intent", PBMIntent.GENERIC)
     confidence = pbm_confidence(
         pbm_intent,
         metric_resolved=metric_col is not None,
         dimension_resolved=group_col is not None,
-        validation_passed=validate_metric(intent.get("_question", ""), metric_col),
+        validation_passed=validate_metric(question, metric_col),
     )
     confidence = max(confidence, intent.get("confidence", 0.5))
+
+    # GenAI Insight Engine — transforms raw results into business narratives
+    business = build_business_response(
+        answer=answer,
+        result_df=table,
+        df_full=df_full,
+        metric_col=metric_col,
+        group_col=group_col,
+        question=question,
+        confidence=confidence,
+        reasoning=reasoning,
+        chart=chart,
+    )
+
+    # Merge rule-based insights with business findings
+    base_insights = _generate_insights(table, intent, df_full)
+    enriched_insights = business.get("key_findings", []) or base_insights
 
     # Build planner debug output
     filters = intent.get("_detected_filters", [])
@@ -1951,17 +1969,22 @@ def _build_response(answer: str, table: pd.DataFrame, intent: dict, df_full: pd.
     }
 
     return {
-        "answer": answer,
+        "answer": business.get("data_story") or answer,
         "table": _records(table.head(200)),
         "columns": list(table.columns),
         "charts": charts,
-        "insights": insights,
+        "insights": enriched_insights,
         "confidence": confidence,
         "metric_used": metric_col,
         "group_by": group_col,
         "aggregation": intent.get("aggregation", "sum").upper(),
         "reasoning": reasoning,
         "planner": planner,
+        "executive_summary": business.get("executive_summary", ""),
+        "business_impact": business.get("business_impact", ""),
+        "recommendations": business.get("recommendations", []),
+        "chart_narrative": business.get("chart_narrative", ""),
+        "confidence_explanation": business.get("confidence_explanation", {}),
     }
 
 
