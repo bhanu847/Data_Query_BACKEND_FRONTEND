@@ -110,6 +110,10 @@ export const deleteAllSources = () =>
 export const askQuestion = (source_id, question) =>
   api.post("/query/ask", { source_id, question }).then((r) => r.data);
 
+// Multi-file ask — query across multiple data sources
+export const askMultiQuestion = (source_ids, question) =>
+  api.post("/query/ask/multi", { source_ids, question }).then((r) => r.data);
+
 // Format-specific ask endpoints
 export const askPDF = (source_id, question) =>
   api.post("/query/ask/pdf", { source_id, question }).then((r) => r.data);

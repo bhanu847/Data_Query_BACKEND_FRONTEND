@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { uploadAny, askQuestion, listSources, deleteSource, downloadAsExcel, downloadAsPDF, downloadAsJSON } from "../services/api";
+import { uploadAny, askQuestion, askMultiQuestion, listSources, deleteSource, downloadAsExcel, downloadAsPDF, downloadAsJSON } from "../services/api";
 import AutoChart from "../charts/AutoChart";
 import ConfirmModal from "../components/ConfirmModal";
 import useConfirm from "../hooks/useConfirm";
@@ -14,6 +14,7 @@ export default function ExcelTool({ onBack, chatContext }) {
   const { confirm, modalProps } = useConfirm();
   const [file, setFile] = useState(null);
   const [sourceId, setSourceId] = useState(null);
+  const [selectedSources, setSelectedSources] = useState([]);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState("");
   const [messages, setMessages] = useState([]);
@@ -27,6 +28,11 @@ export default function ExcelTool({ onBack, chatContext }) {
   const [loadingSources, setLoadingSources] = useState(true);
   const [deleting, setDeleting] = useState(null);
 
+  const hasActiveSession = sourceId || (selectedSources.length > 0 && messages.length > 0);
+  const activeSourceIds = selectedSources.length > 0
+    ? selectedSources.map((s) => s.id)
+    : sourceId ? [sourceId] : [];
+
   useEffect(() => {
     listSources()
       .then(setSources)
@@ -37,6 +43,7 @@ export default function ExcelTool({ onBack, chatContext }) {
   useEffect(() => {
     if (chatContext && chatContext.sourceId) {
       setSourceId(chatContext.sourceId);
+      setSelectedSources([]);
       setFile({ name: chatContext.sourceName || "Data source" });
       const msgs = [
         {
@@ -55,37 +62,70 @@ export default function ExcelTool({ onBack, chatContext }) {
     }
   }, [chatContext]);
 
-  const handleFile = async (f) => {
-    if (!f) return;
-    setFile(f);
+  const handleFiles = async (fileList) => {
+    const files = Array.from(fileList).filter(Boolean);
+    if (files.length === 0) return;
+
     setSourceId(null);
+    setSelectedSources([]);
     setMessages([]);
     setUploadError("");
     setUploading(true);
-    try {
-      const res = await uploadAny(f);
-      const id = res.source_id || res.id;
-      setSourceId(id);
 
-      const cols = res.columns || [];
-      const rowCount = res.source?.row_count || res.preview?.length || 0;
-      setSources((prev) => [{ id, name: f.name, kind: f.name.split(".").pop(), row_count: rowCount }, ...prev]);
+    const uploaded = [];
+    const errors = [];
+
+    for (const f of files) {
+      try {
+        const res = await uploadAny(f);
+        const id = res.source_id || res.id;
+        const cols = res.columns || [];
+        const rowCount = res.source?.row_count || res.preview?.length || 0;
+        const newSrc = { id, name: f.name, kind: f.name.split(".").pop(), row_count: rowCount, columns: cols };
+        uploaded.push(newSrc);
+      } catch (e) {
+        errors.push(`${f.name}: ${e.message}`);
+      }
+    }
+
+    if (uploaded.length > 0) {
+      setSources((prev) => [...uploaded, ...prev]);
+    }
+
+    if (uploaded.length === 1) {
+      const src = uploaded[0];
+      setSourceId(src.id);
+      setFile({ name: src.name });
       setMessages([
         {
           role: "assistant",
           type: "info",
-          answer: `"${f.name}" uploaded successfully!\n\nRows: ${rowCount.toLocaleString()} | Columns: ${cols.length}\nColumns: ${cols.join(", ")}\n\nAsk me anything about this data!`,
+          answer: `"${src.name}" uploaded successfully!\n\nRows: ${(src.row_count || 0).toLocaleString()} | Columns: ${(src.columns || []).length}\nColumns: ${(src.columns || []).join(", ")}\n\nAsk me anything about this data!`,
         },
       ]);
-    } catch (e) {
-      setUploadError(e.message);
-    } finally {
-      setUploading(false);
+    } else if (uploaded.length > 1) {
+      setSelectedSources(uploaded);
+      const names = uploaded.map((s) => s.name);
+      const totalRows = uploaded.reduce((sum, s) => sum + (s.row_count || 0), 0);
+      setMessages([
+        {
+          role: "assistant",
+          type: "info",
+          answer: `${uploaded.length} files uploaded successfully!\n\n${names.map((n) => `  - ${n}`).join("\n")}\n\nTotal rows: ~${totalRows.toLocaleString()}\n\nMulti-file chat is active. I'll merge these datasets and answer questions across all of them!`,
+        },
+      ]);
     }
+
+    if (errors.length > 0) {
+      setUploadError(errors.join("\n"));
+    }
+
+    setUploading(false);
   };
 
   const handleSelectSource = (src) => {
     setSourceId(src.id);
+    setSelectedSources([]);
     setFile({ name: src.name || `Source ${src.id}` });
     setMessages([
       {
@@ -98,6 +138,26 @@ export default function ExcelTool({ onBack, chatContext }) {
     setUploadError("");
   };
 
+  const handleToggleMultiSource = (src, e) => {
+    e.stopPropagation();
+    setSelectedSources((prev) => {
+      const exists = prev.find((s) => s.id === src.id);
+      if (exists) return prev.filter((s) => s.id !== src.id);
+      if (prev.length >= 10) return prev;
+      return [...prev, src];
+    });
+  };
+
+  const handleRemoveMultiSource = (srcId) => {
+    setSelectedSources((prev) => {
+      const next = prev.filter((s) => s.id !== srcId);
+      if (next.length === 0) {
+        setMessages([]);
+      }
+      return next;
+    });
+  };
+
   const handleDeleteSource = async (srcId, e) => {
     e.stopPropagation();
     const ok = await confirm({ title: "Delete Dataset", message: "This dataset and all its data will be permanently deleted. This action cannot be undone." });
@@ -106,6 +166,7 @@ export default function ExcelTool({ onBack, chatContext }) {
     try {
       await deleteSource(srcId);
       setSources((prev) => prev.filter((s) => s.id !== srcId));
+      setSelectedSources((prev) => prev.filter((s) => s.id !== srcId));
       if (sourceId === srcId) {
         setSourceId(null);
         setFile(null);
@@ -117,18 +178,33 @@ export default function ExcelTool({ onBack, chatContext }) {
 
   const handleDrop = (e) => {
     e.preventDefault();
-    const f = e.dataTransfer.files[0];
-    if (f) handleFile(f);
+    if (e.dataTransfer.files.length > 0) handleFiles(e.dataTransfer.files);
   };
 
   const sendQuestion = async () => {
     const q = question.trim();
-    if (!q || !sourceId || asking) return;
+    if (!q || activeSourceIds.length === 0 || asking) return;
     setQuestion("");
-    setMessages((prev) => [...prev, { role: "user", text: q }]);
+
+    // Auto-start session if sending from the selection screen
+    if (messages.length === 0 && selectedSources.length > 0) {
+      const names = selectedSources.map((s) => s.name || `Source ${s.id}`);
+      setMessages([
+        {
+          role: "assistant",
+          type: "info",
+          answer: `Multi-file chat started with ${selectedSources.length} dataset${selectedSources.length > 1 ? "s" : ""}:\n${names.map((n) => `  - ${n}`).join("\n")}`,
+        },
+        { role: "user", text: q },
+      ]);
+    } else {
+      setMessages((prev) => [...prev, { role: "user", text: q }]);
+    }
     setAsking(true);
     try {
-      const res = await askQuestion(sourceId, q);
+      const res = activeSourceIds.length > 1
+        ? await askMultiQuestion(activeSourceIds, q)
+        : await askQuestion(activeSourceIds[0], q);
 
       if (res.excerpts !== undefined) {
         setMessages((prev) => [
@@ -141,7 +217,10 @@ export default function ExcelTool({ onBack, chatContext }) {
           {
             role: "assistant", type: "tabular", answer: res.answer,
             table: res.table || [], columns: res.columns || [], charts: res.charts || [],
-            insights: res.insights || [], sql: res.sql, confidence: res.confidence, question: q,
+            insights: res.insights || [], confidence: res.confidence, question: q,
+            metric_used: res.metric_used || null, group_by: res.group_by || null,
+            aggregation: res.aggregation || null, reasoning: res.reasoning || [],
+            planner: res.planner || null,
           },
         ]);
       }
@@ -163,11 +242,11 @@ export default function ExcelTool({ onBack, chatContext }) {
         <div>
           <button onClick={onBack} className="mb-1 text-sm text-muted hover:text-ink">← Back to Tools</button>
           <h2 className="font-display text-xl font-semibold text-ink">Chat with Data</h2>
-          <p className="text-sm text-muted">Upload a file or select an existing dataset, then ask questions in plain English.</p>
+          <p className="text-sm text-muted">Upload one or multiple files, select existing datasets, then ask questions in plain English.</p>
         </div>
       </div>
 
-      {!sourceId && (
+      {!hasActiveSession && (
         <div className="space-y-4">
           {/* Upload zone */}
           <div
@@ -182,13 +261,13 @@ export default function ExcelTool({ onBack, chatContext }) {
               <p className="text-sm font-medium text-muted animate-pulse">Uploading…</p>
             ) : (
               <>
-                <p className="font-medium text-ink">Drop any data file here or click to browse</p>
-                <p className="text-sm text-muted-2">.csv · .xlsx · .json · .tsv · .parquet · .xml · .pdf · .docx</p>
+                <p className="font-medium text-ink">Drop files here or click to browse</p>
+                <p className="text-sm text-muted-2">Select one or multiple files · .csv · .xlsx · .json · .tsv · .parquet · .xml · .pdf · .docx</p>
               </>
             )}
-            {uploadError && <p className="text-sm text-accent-rose">{uploadError}</p>}
-            <input ref={fileRef} type="file" accept=".csv,.xlsx,.xls,.json,.jsonl,.tsv,.parquet,.xml,.pdf,.docx,.txt,.html" className="hidden"
-              onChange={(e) => handleFile(e.target.files[0])} />
+            {uploadError && <p className="text-sm text-accent-rose whitespace-pre-wrap">{uploadError}</p>}
+            <input ref={fileRef} type="file" multiple accept=".csv,.xlsx,.xls,.json,.jsonl,.tsv,.parquet,.xml,.pdf,.docx,.txt,.html" className="hidden"
+              onChange={(e) => { handleFiles(e.target.files); e.target.value = ""; }} />
           </div>
 
           {/* Existing datasets */}
@@ -196,61 +275,153 @@ export default function ExcelTool({ onBack, chatContext }) {
             <div className="space-y-2">{[1, 2, 3].map((i) => <div key={i} className="h-14 rounded-xl bg-surface-1 animate-pulse" />)}</div>
           ) : sources.length > 0 && (
             <div className="rounded-2xl border border-border bg-surface-1 p-4 space-y-3">
-              <p className="text-sm font-semibold text-ink">Or select an existing dataset</p>
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-semibold text-ink">Select dataset(s)</p>
+                {selectedSources.length > 0 && (
+                  <span className="text-xs font-medium text-brand">{selectedSources.length} selected</span>
+                )}
+              </div>
               <div className="grid gap-1.5 max-h-[280px] overflow-y-auto pr-1">
-                {sources.map((src) => (
-                  <button
-                    key={src.id}
-                    onClick={() => handleSelectSource(src)}
-                    className="group flex w-full items-center gap-3 rounded-xl border border-border px-3.5 py-3 text-left hover:border-brand/30 hover:bg-brand/[0.04] transition-all"
-                  >
-                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-accent-emerald/10 text-[10px] font-bold font-mono text-accent-emerald border border-accent-emerald/20">
-                      {KIND_BADGE[src.kind] || "F"}
-                    </span>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-ink truncate">{src.name || `Source ${src.id}`}</p>
-                      <p className="text-[11px] text-muted-2">
-                        {src.row_count ? `${src.row_count.toLocaleString()} rows` : ""}{src.row_count && src.kind ? " · " : ""}{src.kind || "file"}
-                      </p>
-                    </div>
-                    <span className="text-xs font-semibold text-brand opacity-0 group-hover:opacity-100 transition-opacity shrink-0">Select →</span>
-                    <button
-                      aria-label={`Delete ${src.name}`}
-                      onClick={(e) => handleDeleteSource(src.id, e)}
-                      disabled={deleting === src.id}
-                      className="shrink-0 rounded-lg p-1.5 text-muted-2 opacity-0 group-hover:opacity-100 hover:bg-accent-rose/10 hover:text-accent-rose disabled:opacity-50 transition-all"
+                {sources.map((src) => {
+                  const isChecked = selectedSources.some((s) => s.id === src.id);
+                  return (
+                    <div
+                      key={src.id}
+                      className={`group flex w-full items-center gap-3 rounded-xl border px-3.5 py-3 text-left transition-all cursor-pointer ${isChecked ? "border-brand/40 bg-brand/[0.06]" : "border-border hover:border-brand/30 hover:bg-brand/[0.04]"}`}
                     >
-                      {deleting === src.id ? (
-                        <span className="block h-3.5 w-3.5 animate-spin rounded-full border-2 border-accent-rose/30 border-t-accent-rose" />
-                      ) : (
-                        <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                        </svg>
-                      )}
+                      {/* Multi-select checkbox */}
+                      <button
+                        onClick={(e) => handleToggleMultiSource(src, e)}
+                        className={`flex h-5 w-5 shrink-0 items-center justify-center rounded border-2 transition-colors ${isChecked ? "border-brand bg-brand text-white" : "border-border-2 hover:border-brand/50"}`}
+                        aria-label={`${isChecked ? "Deselect" : "Select"} ${src.name}`}
+                      >
+                        {isChecked && (
+                          <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                          </svg>
+                        )}
+                      </button>
+                      <button
+                        onClick={() => handleSelectSource(src)}
+                        className="flex flex-1 items-center gap-3 min-w-0"
+                      >
+                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-accent-emerald/10 text-[10px] font-bold font-mono text-accent-emerald border border-accent-emerald/20">
+                          {KIND_BADGE[src.kind] || "F"}
+                        </span>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-ink truncate">{src.name || `Source ${src.id}`}</p>
+                          <p className="text-[11px] text-muted-2">
+                            {src.row_count ? `${src.row_count.toLocaleString()} rows` : ""}{src.row_count && src.kind ? " · " : ""}{src.kind || "file"}
+                          </p>
+                        </div>
+                        <span className="text-xs font-semibold text-brand opacity-0 group-hover:opacity-100 transition-opacity shrink-0">Chat →</span>
+                      </button>
+                      <button
+                        aria-label={`Delete ${src.name}`}
+                        onClick={(e) => handleDeleteSource(src.id, e)}
+                        disabled={deleting === src.id}
+                        className="shrink-0 rounded-lg p-1.5 text-muted-2 opacity-0 group-hover:opacity-100 hover:bg-accent-rose/10 hover:text-accent-rose disabled:opacity-50 transition-all"
+                      >
+                        {deleting === src.id ? (
+                          <span className="block h-3.5 w-3.5 animate-spin rounded-full border-2 border-accent-rose/30 border-t-accent-rose" />
+                        ) : (
+                          <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        )}
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Selected files summary + inline chat input */}
+          {selectedSources.length > 0 && (
+            <div className="rounded-2xl border border-brand/30 bg-brand/[0.04] p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium text-brand">{selectedSources.length} dataset{selectedSources.length > 1 ? "s" : ""} selected</span>
+                <button onClick={() => setSelectedSources([])} className="text-xs text-muted hover:text-accent-rose">Clear all</button>
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {selectedSources.map((src) => (
+                  <span key={src.id} className="inline-flex items-center gap-1.5 rounded-lg bg-white/80 border border-border px-2.5 py-1 text-xs font-medium text-ink">
+                    <span className="text-[9px] font-bold font-mono text-accent-emerald">{KIND_BADGE[src.kind] || "F"}</span>
+                    <span className="max-w-[120px] truncate">{src.name}</span>
+                    <button onClick={() => handleRemoveMultiSource(src.id)} className="text-muted-2 hover:text-accent-rose ml-0.5">
+                      <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
                     </button>
-                  </button>
+                  </span>
                 ))}
+              </div>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={question}
+                  onChange={(e) => setQuestion(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && sendQuestion()}
+                  placeholder={selectedSources.length > 1 ? `Ask a question across ${selectedSources.length} datasets…` : "Ask a question about this dataset…"}
+                  className="flex-1 rounded-xl border border-border px-4 py-2.5 text-sm outline-none focus:border-brand/50 focus:ring-2 focus:ring-brand/10"
+                />
+                <button
+                  onClick={sendQuestion}
+                  disabled={!question.trim() || asking}
+                  className="rounded-xl bg-brand px-5 py-2.5 text-sm font-medium text-white hover:-translate-y-0.5 disabled:opacity-50"
+                >
+                  {asking ? "…" : "Send"}
+                </button>
               </div>
             </div>
           )}
         </div>
       )}
 
-      {sourceId && (
+      {hasActiveSession && (
         <>
-          <div className="flex items-center justify-between rounded-xl border border-emerald-200 bg-accent-emerald/10 px-4 py-2">
-            <span className="text-sm font-medium text-accent-emerald">📄 {file?.name}</span>
-            <button
-              onClick={() => { setFile(null); setSourceId(null); setMessages([]); }}
-              className="text-xs text-muted hover:text-accent-rose"
-            >
-              Change file
-            </button>
-          </div>
+          {/* Active source(s) header */}
+          {selectedSources.length >= 1 ? (
+            <div className="rounded-xl border border-brand/30 bg-brand/[0.06] px-4 py-2.5 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium text-brand">{selectedSources.length} dataset{selectedSources.length > 1 ? "s" : ""} active</span>
+                <button
+                  onClick={() => { setSelectedSources([]); setSourceId(null); setFile(null); setMessages([]); }}
+                  className="text-xs text-muted hover:text-accent-rose"
+                >
+                  Change files
+                </button>
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {selectedSources.map((src) => (
+                  <span key={src.id} className="inline-flex items-center gap-1.5 rounded-lg bg-white/80 border border-border px-2.5 py-1 text-xs font-medium text-ink">
+                    <span className="text-[9px] font-bold font-mono text-accent-emerald">{KIND_BADGE[src.kind] || "F"}</span>
+                    <span className="max-w-[120px] truncate">{src.name}</span>
+                    <button onClick={() => handleRemoveMultiSource(src.id)} className="text-muted-2 hover:text-accent-rose ml-0.5">
+                      <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </span>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-center justify-between rounded-xl border border-emerald-200 bg-accent-emerald/10 px-4 py-2">
+              <span className="text-sm font-medium text-accent-emerald">{file?.name}</span>
+              <button
+                onClick={() => { setFile(null); setSourceId(null); setSelectedSources([]); setMessages([]); }}
+                className="text-xs text-muted hover:text-accent-rose"
+              >
+                Change file
+              </button>
+            </div>
+          )}
 
           <div className="flex-1 overflow-y-auto rounded-2xl border border-border bg-surface-1 p-4 space-y-3 min-h-[300px] max-h-[65vh]">
             {messages.map((msg, i) => (
-              <ChatBubble key={i} msg={msg} sourceId={sourceId} />
+              <ChatBubble key={i} msg={msg} sourceId={activeSourceIds[0]} />
             ))}
             {asking && (
               <div className="flex justify-start">
@@ -268,7 +439,7 @@ export default function ExcelTool({ onBack, chatContext }) {
               value={question}
               onChange={(e) => setQuestion(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && sendQuestion()}
-              placeholder="Ask a question about your data…"
+              placeholder={activeSourceIds.length > 1 ? `Ask a question across ${activeSourceIds.length} datasets…` : "Ask a question about your data…"}
               className="flex-1 rounded-xl border border-border px-4 py-2.5 text-sm outline-none focus:border-brand/50 focus:ring-2 focus:ring-brand/10"
             />
             <button
@@ -453,13 +624,46 @@ function ChatBubble({ msg, sourceId }) {
           </div>
         )}
 
-        {/* SQL */}
-        {msg.sql && (
+        {/* Analysis Planner */}
+        {(msg.planner || msg.metric_used || msg.reasoning?.length > 0) && (
           <details className="group">
             <summary className="text-xs font-semibold text-muted uppercase tracking-wide cursor-pointer hover:text-ink">
-              Generated SQL
+              Analysis Planner
             </summary>
-            <pre className="mt-2 rounded-lg bg-slate-900 text-green-400 p-3 text-xs overflow-x-auto">{msg.sql}</pre>
+            <div className="mt-2 rounded-lg bg-emerald-50 border border-emerald-200 p-3 space-y-2">
+              {msg.metric_used && (
+                <div className="flex flex-wrap gap-2">
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-xs font-medium">
+                    Metric: {msg.aggregation || "SUM"}({msg.metric_used})
+                  </span>
+                  {msg.group_by && (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 text-xs font-medium">
+                      Group By: {msg.group_by}
+                    </span>
+                  )}
+                  {msg.planner?.calculation_type && (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-purple-100 text-purple-800 text-xs font-medium">
+                      {msg.planner.calculation_type}
+                    </span>
+                  )}
+                </div>
+              )}
+              {msg.planner?.filters?.length > 0 && (
+                <div className="text-xs text-emerald-700">
+                  <span className="font-semibold">Filters:</span> {msg.planner.filters.join(" | ")}
+                </div>
+              )}
+              {msg.reasoning?.length > 0 && (
+                <ul className="space-y-0.5 pt-1 border-t border-emerald-200">
+                  {msg.reasoning.map((step, idx) => (
+                    <li key={idx} className="text-xs text-emerald-700 flex items-start gap-1.5">
+                      <span className="text-emerald-400 mt-0.5">&#x2192;</span>
+                      {step}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
           </details>
         )}
 

@@ -12,6 +12,7 @@ from app.database.db import get_db
 from app.models.models import QueryLog, Source, User
 from app.schemas.schemas import (
     QueryRequest,
+    MultiQueryRequest,
     QueryResponse,
     TextQueryResponse,
     DownloadQueryRequest,
@@ -102,6 +103,57 @@ def ask(payload: QueryRequest, db: Session = Depends(get_db), user: User = Depen
 
     # text, txt, or unknown
     return _ask_text(source, payload.question, db, user)
+
+
+# --------------------------------------------------------------------------- #
+#  Multi-file endpoint — query across multiple data sources at once
+# --------------------------------------------------------------------------- #
+
+@router.post("/ask/multi", response_model=None)
+def ask_multi(
+    payload: MultiQueryRequest,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    if not payload.source_ids:
+        raise HTTPException(status_code=400, detail="No source IDs provided")
+    if len(payload.source_ids) > 10:
+        raise HTTPException(status_code=400, detail="Maximum 10 sources per query")
+
+    # Single source -> use the normal path
+    if len(payload.source_ids) == 1:
+        source = _get_source(db, payload.source_ids[0], user.id)
+        single_payload = QueryRequest(source_id=payload.source_ids[0], question=payload.question)
+        if source.kind in TABULAR_KINDS:
+            return _ask_tabular(source, single_payload, db, user)
+        if source.kind in HYBRID_KINDS and _source_has_tabular_data(db, source, user.id):
+            return _ask_tabular(source, single_payload, db, user)
+        return _ask_text(source, payload.question, db, user)
+
+    # Multiple sources -> merge and query
+    try:
+        combined = store.get_multi_frame(db, payload.source_ids, user.id)
+    except KeyError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    result = run_query(combined, payload.question)
+
+    source_names = []
+    for sid in payload.source_ids:
+        src = db.query(Source).filter(Source.id == sid).first()
+        if src:
+            source_names.append(src.name)
+
+    db.add(QueryLog(
+        user_id=user.id,
+        source_id=payload.source_ids[0],
+        question=f"[Multi: {', '.join(source_names)}] {payload.question}",
+        answer=result.get("answer"),
+    ))
+    db.commit()
+    return result
 
 
 # --------------------------------------------------------------------------- #

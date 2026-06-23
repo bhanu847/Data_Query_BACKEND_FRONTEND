@@ -56,6 +56,11 @@ class QueryRequest(BaseModel):
     question: str
 
 
+class MultiQueryRequest(BaseModel):
+    source_ids: list[int]
+    question: str
+
+
 class ChartSpec(BaseModel):
     type: str  # line | bar | pie | scatter
     title: str
@@ -70,8 +75,12 @@ class QueryResponse(BaseModel):
     columns: list[str]
     charts: list[ChartSpec]
     insights: list[str] = []
-    sql: Optional[str] = None
     confidence: float = 0.5
+    metric_used: Optional[str] = None
+    group_by: Optional[str] = None
+    aggregation: Optional[str] = None
+    reasoning: list[str] = []
+    planner: Optional[dict[str, Any]] = None
 
 
 class ExcerptItem(BaseModel):
