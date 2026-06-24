@@ -165,6 +165,31 @@ def clean_apply(
     }
 
 
+class RowDetailRequest(BaseModel):
+    source_id: int
+    row_index: int
+
+
+@router.post("/clean/row-detail")
+def row_detail(
+    payload: RowDetailRequest,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    df = _frame(db, ExportRequest(source_id=payload.source_id), user)
+    if payload.row_index < 0 or payload.row_index >= len(df):
+        raise HTTPException(status_code=400, detail="Row index out of range")
+    row = df.iloc[payload.row_index]
+    record = {}
+    for col in df.columns:
+        val = row[col]
+        if val is None or (isinstance(val, float) and (val != val)):
+            record[col] = None
+        else:
+            record[col] = str(val)
+    return {"row": payload.row_index, "record": record}
+
+
 @router.post("/clean/download")
 def clean_download(
     payload: CleanRequest,

@@ -238,6 +238,9 @@ export const profileDataset = (source_id) =>
 export const applyCleanFixes = (source_id, fixes) =>
   api.post("/export/clean/apply", { source_id, fixes }).then((r) => r.data);
 
+export const getRowDetail = (source_id, row_index) =>
+  api.post("/export/clean/row-detail", { source_id, row_index }).then((r) => r.data);
+
 export async function downloadCleanedFile(source_id, fixes) {
   const res = await api.post(
     "/export/clean/download",
