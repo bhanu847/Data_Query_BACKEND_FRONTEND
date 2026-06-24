@@ -110,7 +110,7 @@ export default function ExportTool({ onBack }) {
         {error && <p className="text-sm text-accent-rose">{error}</p>}
 
         {done && (
-          <div className="rounded-xl bg-accent-emerald/10 border border-emerald-200 px-4 py-3 text-sm text-accent-emerald">
+          <div className="rounded-xl bg-accent-emerald/10 border border-accent-emerald/25 px-4 py-3 text-sm text-accent-emerald">
             ✅ File downloaded successfully!
           </div>
         )}

@@ -151,7 +151,7 @@ export default function APITool({ onBack }) {
           <div className="rounded-2xl border border-border bg-surface-1 p-4 space-y-2">
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-semibold text-ink">API Response</h3>
-              <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-accent-emerald">200 OK</span>
+              <span className="rounded-full bg-accent-emerald/15 px-2 py-0.5 text-xs font-medium text-accent-emerald">200 OK</span>
             </div>
             <pre className="max-h-48 overflow-y-auto rounded-xl bg-surface-1 p-3 text-xs text-ink">
               {JSON.stringify(response, null, 2)}

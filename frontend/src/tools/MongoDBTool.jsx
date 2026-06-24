@@ -205,7 +205,7 @@ export default function MongoDBTool({ onBack }) {
 
       {sourceId && (
         <>
-          <div className="rounded-xl border border-green-200 bg-accent-emerald/10 px-4 py-2 space-y-2">
+          <div className="rounded-xl border border-accent-emerald/25 bg-accent-emerald/10 px-4 py-2 space-y-2">
             <div className="flex items-center justify-between">
               <span className="text-sm font-medium text-accent-emerald">
                 🍃 {form.database}@{form.host}
@@ -213,7 +213,7 @@ export default function MongoDBTool({ onBack }) {
               <div className="flex gap-2">
                 <button
                   onClick={handleRefresh}
-                  className="text-xs text-green-600 hover:text-green-800"
+                  className="text-xs text-accent-emerald hover:text-accent-emerald/80"
                 >
                   ↻ Refresh
                 </button>
@@ -234,8 +234,8 @@ export default function MongoDBTool({ onBack }) {
                     onClick={() => handleSwitchCollection(coll)}
                     className={`rounded-lg px-2.5 py-1 text-xs font-medium transition-colors ${
                       coll === activeCollection
-                        ? "bg-green-600 text-white"
-                        : "bg-surface-1 text-accent-emerald border border-green-300 hover:bg-green-100"
+                        ? "bg-accent-emerald text-[#050710]"
+                        : "bg-surface-1 text-accent-emerald border border-accent-emerald/30 hover:bg-accent-emerald/15"
                     }`}
                   >
                     {coll}
@@ -306,11 +306,11 @@ function DownloadButtons({ sourceId, question }) {
       <div className="flex gap-2">
         <span className="text-xs text-muted-2 self-center">Download:</span>
         <button onClick={() => handleDownload("excel")} disabled={downloading} aria-label="Download as Excel"
-          className="rounded-lg bg-accent-emerald/10 px-3 py-1 text-xs font-medium text-accent-emerald hover:bg-green-100 disabled:opacity-50">Excel</button>
+          className="rounded-lg bg-accent-emerald/10 px-3 py-1 text-xs font-medium text-accent-emerald hover:bg-accent-emerald/20 disabled:opacity-50">Excel</button>
         <button onClick={() => handleDownload("pdf")} disabled={downloading} aria-label="Download as PDF"
-          className="rounded-lg bg-accent-rose/10 px-3 py-1 text-xs font-medium text-accent-rose hover:bg-red-100 disabled:opacity-50">PDF</button>
+          className="rounded-lg bg-accent-rose/10 px-3 py-1 text-xs font-medium text-accent-rose hover:bg-accent-rose/20 disabled:opacity-50">PDF</button>
         <button onClick={() => handleDownload("json")} disabled={downloading} aria-label="Download as JSON"
-          className="rounded-lg bg-brand/10 px-3 py-1 text-xs font-medium text-brand hover:bg-blue-100 disabled:opacity-50">JSON</button>
+          className="rounded-lg bg-brand/10 px-3 py-1 text-xs font-medium text-brand hover:bg-brand/20 disabled:opacity-50">JSON</button>
       </div>
       {dlError && <p className="text-[11px] text-accent-rose">{dlError}</p>}
     </div>

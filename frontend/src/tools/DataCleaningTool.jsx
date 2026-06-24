@@ -273,7 +273,7 @@ export default function DataCleaningTool({ onBack }) {
 
           {/* AI Executive Summary */}
           {profile.executive_summary && (
-            <div className="rounded-2xl border border-slate-200 bg-slate-50/50 p-5 space-y-3">
+            <div className="rounded-2xl border border-border-2 bg-surface-2 p-5 space-y-3">
               <h3 className="text-sm font-semibold text-ink flex items-center gap-2">
                 <span className="flex h-6 w-6 items-center justify-center rounded-md bg-brand/10 text-[10px] font-bold text-brand">AI</span>
                 Executive Summary
@@ -482,7 +482,7 @@ export default function DataCleaningTool({ onBack }) {
                                           <td className="px-3 py-1.5 text-accent-rose font-mono">{r.value === null || r.value === undefined ? <span className="italic">NULL</span> : String(r.value)}</td>
                                           {r.problem && <td className="px-3 py-1.5 text-muted">{r.problem}</td>}
                                           {r.expected_range && <td className="px-3 py-1.5 text-muted">{r.expected_range}</td>}
-                                          {r.severity && <td className="px-3 py-1.5"><span className={`rounded-full px-1.5 py-0.5 text-[10px] font-bold ${r.severity === "extreme" ? "bg-accent-rose/15 text-accent-rose" : "bg-amber-100 text-amber-700"}`}>{r.severity}</span></td>}
+                                          {r.severity && <td className="px-3 py-1.5"><span className={`rounded-full px-1.5 py-0.5 text-[10px] font-bold ${r.severity === "extreme" ? "bg-accent-rose/15 text-accent-rose" : "bg-accent-amber/15 text-accent-amber"}`}>{r.severity}</span></td>}
                                           {r.fixed && <td className="px-3 py-1.5 text-accent-emerald">{r.fixed}</td>}
                                         </tr>
                                       ))}
@@ -560,7 +560,7 @@ export default function DataCleaningTool({ onBack }) {
                         <tr key={pr.row} className="border-t border-border hover:bg-surface-1 cursor-pointer" onClick={() => setSelectedRow({ sourceId, row: pr.row, record: pr.record, problemCols: pr.problem_columns })}>
                           <td className="px-3 py-2 font-mono text-ink">{pr.row}</td>
                           <td className="px-3 py-2">
-                            <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${pr.issue_count > 2 ? "bg-accent-rose/15 text-accent-rose" : pr.issue_count > 1 ? "bg-amber-100 text-amber-700" : "bg-blue-100 text-blue-700"}`}>
+                            <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${pr.issue_count > 2 ? "bg-accent-rose/15 text-accent-rose" : pr.issue_count > 1 ? "bg-accent-amber/15 text-accent-amber" : "bg-brand/15 text-brand"}`}>
                               {pr.issue_count} {pr.issue_count > 1 ? "issues" : "issue"}
                             </span>
                           </td>

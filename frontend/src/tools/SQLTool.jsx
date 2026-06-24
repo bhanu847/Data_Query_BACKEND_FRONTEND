@@ -209,11 +209,11 @@ function DownloadButtons({ sourceId, question }) {
       <div className="flex gap-2">
         <span className="text-xs text-muted-2 self-center">Download:</span>
         <button onClick={() => handleDownload("excel")} disabled={downloading} aria-label="Download as Excel"
-          className="rounded-lg bg-accent-emerald/10 px-3 py-1 text-xs font-medium text-accent-emerald hover:bg-green-100 disabled:opacity-50">Excel</button>
+          className="rounded-lg bg-accent-emerald/10 px-3 py-1 text-xs font-medium text-accent-emerald hover:bg-accent-emerald/20 disabled:opacity-50">Excel</button>
         <button onClick={() => handleDownload("pdf")} disabled={downloading} aria-label="Download as PDF"
-          className="rounded-lg bg-accent-rose/10 px-3 py-1 text-xs font-medium text-accent-rose hover:bg-red-100 disabled:opacity-50">PDF</button>
+          className="rounded-lg bg-accent-rose/10 px-3 py-1 text-xs font-medium text-accent-rose hover:bg-accent-rose/20 disabled:opacity-50">PDF</button>
         <button onClick={() => handleDownload("json")} disabled={downloading} aria-label="Download as JSON"
-          className="rounded-lg bg-brand/10 px-3 py-1 text-xs font-medium text-brand hover:bg-blue-100 disabled:opacity-50">JSON</button>
+          className="rounded-lg bg-brand/10 px-3 py-1 text-xs font-medium text-brand hover:bg-brand/20 disabled:opacity-50">JSON</button>
       </div>
       {dlError && <p className="text-[11px] text-accent-rose">{dlError}</p>}
     </div>

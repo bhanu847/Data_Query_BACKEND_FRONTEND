@@ -310,9 +310,9 @@ function DownloadButtons({ sourceId, question }) {
       <div className="flex gap-2">
         <span className="text-xs text-muted-2 self-center">Download:</span>
         {[
-          { fmt: "excel", label: "Excel", bg: "bg-accent-emerald/10 text-accent-emerald hover:bg-green-100" },
-          { fmt: "pdf", label: "PDF", bg: "bg-accent-rose/10 text-accent-rose hover:bg-red-100" },
-          { fmt: "json", label: "JSON", bg: "bg-brand/10 text-brand hover:bg-blue-100" },
+          { fmt: "excel", label: "Excel", bg: "bg-accent-emerald/10 text-accent-emerald hover:bg-accent-emerald/20" },
+          { fmt: "pdf", label: "PDF", bg: "bg-accent-rose/10 text-accent-rose hover:bg-accent-rose/20" },
+          { fmt: "json", label: "JSON", bg: "bg-brand/10 text-brand hover:bg-brand/20" },
         ].map(({ fmt, label, bg }) => (
           <button key={fmt} onClick={() => handleDownload(fmt)} disabled={downloading} aria-label={`Download as ${label}`}
             className={`rounded-lg px-3 py-1 text-xs font-medium disabled:opacity-50 ${bg}`}>{label}</button>
@@ -328,9 +328,9 @@ function DownloadButtons({ sourceId, question }) {
 function ConfidenceBadge({ score }) {
   if (score == null) return null;
   const pct = Math.round(score * 100);
-  const color = pct >= 80 ? "bg-green-100 text-accent-emerald"
-    : pct >= 50 ? "bg-yellow-100 text-yellow-700"
-    : "bg-red-100 text-accent-rose";
+  const color = pct >= 80 ? "bg-accent-emerald/15 text-accent-emerald"
+    : pct >= 50 ? "bg-accent-amber/15 text-accent-amber"
+    : "bg-accent-rose/15 text-accent-rose";
   return (
     <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ${color}`}>
       {pct}% confidence
@@ -408,12 +408,12 @@ function ChatBubble({ msg, sourceId }) {
 
         {/* Insights */}
         {msg.insights?.length > 0 && (
-          <div className="rounded-xl bg-brand/10 border border-blue-100 p-3">
+          <div className="rounded-xl bg-brand/[0.08] border border-brand/20 p-3">
             <h4 className="text-xs font-semibold text-brand uppercase tracking-wide mb-1.5">Insights</h4>
             <ul className="space-y-1">
               {msg.insights.map((item, idx) => (
-                <li key={idx} className="text-sm text-blue-800 flex items-start gap-1.5">
-                  <span className="text-blue-400 mt-0.5 text-xs">●</span>
+                <li key={idx} className="text-sm text-ink/90 flex items-start gap-1.5">
+                  <span className="text-brand mt-0.5 text-xs">●</span>
                   {item}
                 </li>
               ))}
