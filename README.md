@@ -120,11 +120,22 @@ does:
 
 | Feature | Technique | LLM involved? |
 |---|---|---|
-| Chat with Data (CSV/Excel) — most questions | Rule-based NLU: regex intent detection + a synonym dictionary + fuzzy string matching picks the right columns, then **real pandas operations** (`groupby`, `sum`, `mean`, chi-square test for correlation, etc.) compute the answer | Optional — only to phrase the already-computed numbers as a sentence |
+| Chat with Data (CSV/Excel) — most questions | Rule-based NLU: regex intent detection + a synonym dictionary + fuzzy string matching + (as a last resort) **embedding-based semantic column matching** picks the right columns, then **real pandas operations** (`groupby`, `sum`, `mean`, chi-square test for correlation, etc.) compute the answer | Optional — only to phrase the already-computed numbers as a sentence |
 | Chat with Data — complex/open-ended questions ("what if we raised prices 10%", forecasting, segmentation, Pareto analysis) | The LLM **writes actual pandas code** for the specific question, which the backend then runs in a **restricted sandbox** (see below) | Yes — generates code, doesn't just narrate |
-| Dashboard auto-generation (KPIs, chart picks, per-chart commentary) | **100% rule-based Python.** No LLM call anywhere in this path. | No |
+| Dashboard auto-generation (KPIs, chart picks, per-chart commentary) | **Rule-based Python**, with the same embedding-based semantic matching as a last resort for picking the "revenue" column when no column name matches the keyword heuristic. No LLM call anywhere in this path. | No |
 | Chat with PDF / DOCX / TXT | **Real RAG:** every page/paragraph is turned into a vector embedding (OpenAI `text-embedding-3-small`); the question is embedded too; the chunks whose vectors are most similar (cosine similarity) are retrieved and sent to the LLM — see below | Yes — answers using only the retrieved chunks |
 | Excel Live | LLM **tool-calling** (aka "function calling"/agentic loop) — the model picks from a fixed list of tools (read/write/analyze/chart); it never receives the whole workbook | Yes — decides which tool to call each step |
+
+**Semantic column matching** (`backend/app/services/column_embeddings.py`) is
+the same embedding technique as PDF RAG, pointed at column names instead of
+document text: every column (its name plus a few example values, e.g.
+`"Drug Type (examples: Generic, Brand, Specialty)"`) is embedded once per
+dataset, and a user's phrase is matched against them by cosine similarity.
+It only ever runs as the **last fallback**, after every existing dictionary/
+synonym/keyword check has already failed — so a phrase like *"how much money
+did we make"* can now match a column named `total_amt` with zero words in
+common, without ever overriding a more precise deterministic match that
+already succeeded.
 
 **How Chat with PDF's RAG actually works** (`backend/app/services/embeddings_store.py`):
 

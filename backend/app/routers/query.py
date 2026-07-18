@@ -247,7 +247,7 @@ def download_query_result(
             df = store.get_frame(db, payload.source_id, user.id)
         except (KeyError, ValueError) as e:
             raise HTTPException(status_code=404, detail=str(e))
-        result = run_query(df, payload.question)
+        result = run_query(df, payload.question, source_id=payload.source_id)
         if result.get("table"):
             df = pd.DataFrame(result["table"])
         title = result.get("answer", payload.question)[:80]
@@ -303,7 +303,7 @@ def _ask_tabular(source: Source, payload: QueryRequest, db: Session, user: User)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-    result = run_query(df, payload.question)
+    result = run_query(df, payload.question, source_id=payload.source_id)
 
     db.add(QueryLog(
         user_id=user.id, source_id=payload.source_id,

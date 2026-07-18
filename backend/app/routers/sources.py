@@ -13,6 +13,7 @@ from app.schemas.schemas import SourceOut, UploadResult
 from app.services.data_loader import load_dataframe, dataframe_preview
 from app.services import store
 from app.services import embeddings_store
+from app.services import column_embeddings
 
 router = APIRouter(prefix="/sources", tags=["sources"])
 
@@ -236,6 +237,7 @@ def delete_source(
 
     store.drop_frame(source.id)
     embeddings_store.drop_embeddings(source.id)
+    column_embeddings.drop_column_embeddings(source.id)
     db.delete(source)
     db.commit()
     return {"detail": "Source deleted"}
@@ -259,6 +261,7 @@ def delete_all_sources(
                 pass
         store.drop_frame(source.id)
         embeddings_store.drop_embeddings(source.id)
+        column_embeddings.drop_column_embeddings(source.id)
         db.delete(source)
     db.commit()
     return {"detail": f"Deleted {len(sources)} sources"}

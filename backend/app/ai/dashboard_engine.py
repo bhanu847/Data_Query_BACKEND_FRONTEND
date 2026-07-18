@@ -18,6 +18,7 @@ import numpy as np
 import pandas as pd
 
 from app.ai.insight_engine import _fmt, _fmt_plain, _label
+from app.services import column_embeddings
 
 
 def _numeric_cols(df: pd.DataFrame) -> list[str]:
@@ -49,12 +50,26 @@ def _records(df: pd.DataFrame) -> list[dict]:
     return df.where(pd.notnull(df), None).to_dict(orient="records")
 
 
-def _find_revenue_col(numeric: list[str]) -> str | None:
+def _find_revenue_col(
+    numeric: list[str], source_id: int | None = None, df: pd.DataFrame | None = None
+) -> str | None:
     for n in numeric:
         nl = n.lower()
         if any(w in nl for w in ("price", "revenue", "sales", "amount", "total",
                                   "profit", "cost", "paid", "spend", "copay")):
             return n
+
+    # Last resort, before just grabbing an arbitrary column: semantic match
+    # against "revenue" (embeddings, see column_embeddings.py) — better than
+    # blindly picking numeric[0], which is often the wrong column (e.g. an
+    # ID or Age column that happens to come first).
+    if source_id is not None and numeric:
+        matches = column_embeddings.match_column_semantic(
+            source_id, numeric, "total revenue, sales, or monetary amount", df=df
+        )
+        if matches:
+            return matches[0][0]
+
     return numeric[0] if numeric else None
 
 
@@ -369,11 +384,11 @@ def _generate_executive_summary(
 #  Main Entry Point
 # ---------------------------------------------------------------------------
 
-def generate_dashboard(df: pd.DataFrame, name: str = "Dataset") -> dict:
+def generate_dashboard(df: pd.DataFrame, name: str = "Dataset", source_id: int | None = None) -> dict:
     numeric = _numeric_cols(df)
     dt_col = _datetime_col(df)
     categorical = _categorical_cols(df, dt_col)
-    rev_col = _find_revenue_col(numeric)
+    rev_col = _find_revenue_col(numeric, source_id, df)
 
     # KPIs with business context
     kpis = _generate_kpis(df, numeric, categorical, rev_col)

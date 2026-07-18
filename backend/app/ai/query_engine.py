@@ -44,6 +44,7 @@ from app.ai.query_planner import (
     detect_calculation_type,
 )
 from app.ai.insight_engine import build_business_response
+from app.services import column_embeddings
 
 # ---------------------------------------------------------------------------
 #  Column synonym map: user language -> likely column names
@@ -426,7 +427,7 @@ def _extract_columns_from_question(question: str, columns: list[str]) -> dict[st
 #  Intent Classification
 # ---------------------------------------------------------------------------
 
-def _classify_intent(question: str, df: pd.DataFrame) -> dict[str, Any]:
+def _classify_intent(question: str, df: pd.DataFrame, source_id: int | None = None) -> dict[str, Any]:
     """Classify user question into analysis intent with PBM domain awareness."""
     q_lower = question.lower().strip()
     columns = list(df.columns)
@@ -450,6 +451,7 @@ def _classify_intent(question: str, df: pd.DataFrame) -> dict[str, Any]:
         "params": {},
         "reasoning": reasoning,
         "pbm_intent": PBMIntent.GENERIC,
+        "_source_id": source_id,
     }
 
     # ── Step 1: PBM domain intent classification ──
@@ -561,19 +563,19 @@ def _classify_intent(question: str, df: pd.DataFrame) -> dict[str, Any]:
 
     # ── Step 7: Auto-infer missing group/metric using semantic layer first ──
     if intent["type"] in ("ranking_count", "breakdown") and not intent["group_cols"]:
-        subject = _find_subject(q_lower, categorical, df)
+        subject = _find_subject(q_lower, categorical, df, source_id)
         if subject:
             intent["group_cols"] = [subject]
             intent["confidence"] = max(intent["confidence"], 0.8)
 
     if intent["type"] in ("ranking_metric", "aggregate", "trend") and not intent["metric_cols"]:
-        metric = _infer_metric(q_lower, numeric)
+        metric = _infer_metric(q_lower, numeric, source_id)
         if metric:
             intent["metric_cols"] = [metric]
             intent["confidence"] = max(intent["confidence"], 0.8)
 
     if intent["type"] in ("ranking_metric",) and not intent["group_cols"]:
-        subject = _find_subject(q_lower, categorical, df)
+        subject = _find_subject(q_lower, categorical, df, source_id)
         if subject:
             intent["group_cols"] = [subject]
 
@@ -590,11 +592,11 @@ def _classify_intent(question: str, df: pd.DataFrame) -> dict[str, Any]:
 
     if intent["type"] == "group_analysis":
         if not intent["metric_cols"]:
-            metric = _infer_metric(q_lower, numeric)
+            metric = _infer_metric(q_lower, numeric, source_id)
             if metric:
                 intent["metric_cols"] = [metric]
         if not intent["group_cols"]:
-            subject = _find_subject(q_lower, categorical, df)
+            subject = _find_subject(q_lower, categorical, df, source_id)
             if subject:
                 intent["group_cols"] = [subject]
 
@@ -654,7 +656,9 @@ def _classify_intent(question: str, df: pd.DataFrame) -> dict[str, Any]:
     return intent
 
 
-def _find_subject(question: str, categorical: list[str], df: pd.DataFrame) -> str | None:
+def _find_subject(
+    question: str, categorical: list[str], df: pd.DataFrame, source_id: int | None = None
+) -> str | None:
     """Find which categorical column the question is asking about."""
     # 1. PBM semantic dimension resolution (highest priority)
     sem_dim, _ = resolve_semantic_dimension(question, categorical)
@@ -687,10 +691,18 @@ def _find_subject(question: str, categorical: list[str], df: pd.DataFrame) -> st
                 if len(v) >= 3 and v in question:
                     return col
 
+    # 5. Last resort: embedding-based semantic match (see column_embeddings.py)
+    # — only reached once every dictionary/synonym/value-based check above
+    # has failed, so it never overrides a more precise deterministic match.
+    if source_id is not None and categorical:
+        matches = column_embeddings.match_column_semantic(source_id, categorical, question, df=df)
+        if matches:
+            return matches[0][0]
+
     return None
 
 
-def _infer_metric(question: str, numeric: list[str]) -> str | None:
+def _infer_metric(question: str, numeric: list[str], source_id: int | None = None) -> str | None:
     """Infer which numeric column the question refers to.
 
     Uses a strict priority chain:
@@ -698,7 +710,8 @@ def _infer_metric(question: str, numeric: list[str]) -> str | None:
     2. PBM semantic metric mapping
     3. Synonym-based matching
     4. Revenue/cost keyword heuristic
-    5. None (never falls back to first numeric column)
+    5. Embedding-based semantic match (last resort, see column_embeddings.py)
+    6. None (never falls back to first numeric column)
     """
     q_lower = question.lower() if question == question.lower() else question.lower()
 
@@ -738,7 +751,17 @@ def _infer_metric(question: str, numeric: list[str]) -> str | None:
                 if validate_metric(question, col):
                     return col
 
-    # 5. No fallback — return None instead of picking first numeric column
+    # 5. Last resort: embedding-based semantic match — only reached once
+    # every dictionary/synonym/keyword heuristic above has failed, so it
+    # never overrides a more precise deterministic match.
+    if source_id is not None and numeric:
+        matches = column_embeddings.match_column_semantic(source_id, numeric, question)
+        if matches:
+            best_col = matches[0][0]
+            if validate_metric(question, best_col):
+                return best_col
+
+    # 6. No fallback — return None instead of picking first numeric column
     return None
 
 
@@ -1414,7 +1437,7 @@ def _execute_intent(df: pd.DataFrame, intent: dict) -> dict[str, Any]:
     if itype == "ranking_metric" and group_col:
         if not metric_col:
             numeric = _numeric_cols(df)
-            metric_col = _infer_metric(intent.get("_question", ""), numeric) or (numeric[0] if numeric else None)
+            metric_col = _infer_metric(intent.get("_question", ""), numeric, intent.get("_source_id")) or (numeric[0] if numeric else None)
             if metric_col:
                 intent["metric_cols"] = [metric_col]
         if not metric_col:
@@ -1770,10 +1793,10 @@ def _execute_pareto(df: pd.DataFrame, intent: dict) -> dict[str, Any]:
 
     if not metric_col:
         numeric = _numeric_cols(df)
-        metric_col = _infer_metric(intent.get("_question", ""), numeric)
+        metric_col = _infer_metric(intent.get("_question", ""), numeric, intent.get("_source_id"))
     if not group_col:
         categorical = _categorical_cols(df)
-        group_col = _find_subject(intent.get("_question", "").lower(), categorical, df)
+        group_col = _find_subject(intent.get("_question", "").lower(), categorical, df, intent.get("_source_id"))
 
     if not metric_col or not group_col:
         return _ambiguous_response(df, intent, "I need both a metric and a dimension for Pareto analysis.")
@@ -1817,7 +1840,7 @@ def _execute_outlier(df: pd.DataFrame, intent: dict) -> dict[str, Any]:
 
     if not metric_col:
         numeric = _numeric_cols(df)
-        metric_col = _infer_metric(intent.get("_question", ""), numeric)
+        metric_col = _infer_metric(intent.get("_question", ""), numeric, intent.get("_source_id"))
     if not metric_col:
         return _ambiguous_response(df, intent, "Which metric should I check for outliers?")
 
@@ -2332,7 +2355,7 @@ def _no_answer_response(intent: dict, detail: str = "") -> dict[str, Any]:
 #  Main entry point
 # ---------------------------------------------------------------------------
 
-def run_query(df: pd.DataFrame, question: str) -> dict[str, Any]:
+def run_query(df: pd.DataFrame, question: str, source_id: int | None = None) -> dict[str, Any]:
     normalized = _normalize_dataframe(df)
 
     # Build the query plan first (structured analytical planning)
@@ -2342,7 +2365,7 @@ def run_query(df: pd.DataFrame, question: str) -> dict[str, Any]:
     plan_valid, plan_error = validate_plan(plan, normalized)
 
     # Classify intent using the existing engine (enriched with plan data)
-    intent = _classify_intent(question, normalized)
+    intent = _classify_intent(question, normalized, source_id)
     intent["_question"] = question
 
     # Inject planner data into intent for downstream use

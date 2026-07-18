@@ -66,7 +66,7 @@ def _records(df: pd.DataFrame) -> list[dict]:
 def generate(payload: DashboardRequest, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
     df = _get_df(db, payload.source_id, user.id)
     source = db.query(Source).filter(Source.id == payload.source_id).first()
-    return generate_dashboard(df, name=source.name if source else "Dataset")
+    return generate_dashboard(df, name=source.name if source else "Dataset", source_id=payload.source_id)
 
 
 # ---- Column metadata ----

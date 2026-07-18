@@ -238,7 +238,7 @@ def ask_mongodb(
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-    result = run_query(df, payload.question)
+    result = run_query(df, payload.question, source_id=payload.source_id)
 
     db.add(QueryLog(
         user_id=user.id, source_id=payload.source_id,
