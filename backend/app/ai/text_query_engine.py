@@ -5,8 +5,9 @@ Transforms PDF/DOCX/TXT documents into a conversational knowledge base.
 Behaves like a Senior Research Analyst — not a search engine or PDF reader.
 
 Pipeline:
-  Document -> Extraction -> Keyword Retrieval -> Intent Classification
-  -> GenAI Analysis -> Structured Response (Evidence + Insights + Recommendations)
+  Document -> Extraction -> Retrieval (semantic embeddings, falls back to
+  keyword search without an API key) -> Intent Classification -> GenAI
+  Analysis -> Structured Response (Evidence + Insights + Recommendations)
 """
 
 import json
@@ -15,6 +16,7 @@ from typing import Any
 
 import pdfplumber
 from app.config import settings
+from app.services import embeddings_store
 
 
 # ---------------------------------------------------------------------------
@@ -174,7 +176,7 @@ For DECISION questions:
 #  Main Query Function
 # ---------------------------------------------------------------------------
 
-def run_text_query(file_path: str, kind: str, question: str) -> dict[str, Any]:
+def run_text_query(file_path: str, kind: str, question: str, source_id: int | None = None) -> dict[str, Any]:
     if kind == "pdf":
         pages = extract_pdf_text(file_path)
     elif kind in ("docx", "doc"):
@@ -196,10 +198,21 @@ def run_text_query(file_path: str, kind: str, question: str) -> dict[str, Any]:
             "recommendations": [],
             "confidence": "Low",
             "confidence_reason": "No text could be extracted from the document.",
+            "retrieval_method": None,
         }
 
     full_text = "\n\n".join(p["content"] for p in pages)
-    relevant = _keyword_search(pages, question)
+
+    # Real RAG: embed the question + every chunk, retrieve by cosine
+    # similarity. Falls back to keyword search if no API key is configured
+    # or the embedding call fails for any reason (network, rate limit, etc).
+    relevant = None
+    if source_id is not None:
+        relevant = embeddings_store.semantic_search(source_id, pages, question)
+    retrieval_method = "semantic" if relevant is not None else "keyword"
+    if relevant is None:
+        relevant = _keyword_search(pages, question)
+
     intent = _classify_question_intent(question)
 
     client = _client()
@@ -220,6 +233,7 @@ def run_text_query(file_path: str, kind: str, question: str) -> dict[str, Any]:
     result["source_type"] = kind
     result["page_count"] = len(pages)
     result["total_characters"] = len(full_text)
+    result["retrieval_method"] = retrieval_method
 
     return result
 

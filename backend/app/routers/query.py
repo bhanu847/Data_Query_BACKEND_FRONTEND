@@ -239,7 +239,7 @@ def download_query_result(
         use_text = True
 
     if use_text:
-        result = run_text_query(source.file_path, source.kind, payload.question)
+        result = run_text_query(source.file_path, source.kind, payload.question, source_id=source.id)
         df = pd.DataFrame([{"question": payload.question, "answer": result["answer"]}])
         title = f"Query: {payload.question[:50]}"
     else:
@@ -285,7 +285,7 @@ def _ask_text(source: Source, question: str, db: Session, user: User) -> dict:
     if not source.file_path:
         raise HTTPException(status_code=400, detail="Source has no associated file")
 
-    result = run_text_query(source.file_path, source.kind, question)
+    result = run_text_query(source.file_path, source.kind, question, source_id=source.id)
 
     db.add(QueryLog(
         user_id=user.id, source_id=source.id,

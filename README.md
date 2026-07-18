@@ -8,8 +8,8 @@ in plain English, auto-generate a dashboard, and export the results — built wi
 > auto dashboard, CSV/Excel/PDF export, and JWT auth all work end-to-end. The AI
 > query engine runs deterministically with pandas (no API key required) and is
 > enhanced with an LLM narrative when `OPENAI_API_KEY` is set. See
-> [Roadmap](#roadmap) for what's scaffolded for Phase 2 (PDF/RAG, SQL agent,
-> DB connectors, reports, subscriptions).
+> [Roadmap](#roadmap) for what's scaffolded for Phase 2 (SQL agent,
+> DB connectors, report generator, subscriptions).
 
 ---
 
@@ -112,26 +112,49 @@ describing them. It cannot invent a number that pandas didn't compute.
 
 ### Do we use RAG (Retrieval-Augmented Generation)?
 
-**No — not for Chat with Data, and not for Dashboards.** Here's exactly what
-each feature does instead, so there's no ambiguity:
+**Only where it actually helps — Chat with PDF/DOCX/TXT. Not for Chat with
+Data or Dashboards**, because that data is structured (rows/columns), and a
+real computation (pandas `sum`/`mean`/etc.) is always more accurate than an
+LLM reading text chunks and estimating. Here's exactly what each feature
+does:
 
 | Feature | Technique | LLM involved? |
 |---|---|---|
 | Chat with Data (CSV/Excel) — most questions | Rule-based NLU: regex intent detection + a synonym dictionary + fuzzy string matching picks the right columns, then **real pandas operations** (`groupby`, `sum`, `mean`, chi-square test for correlation, etc.) compute the answer | Optional — only to phrase the already-computed numbers as a sentence |
 | Chat with Data — complex/open-ended questions ("what if we raised prices 10%", forecasting, segmentation, Pareto analysis) | The LLM **writes actual pandas code** for the specific question, which the backend then runs in a **restricted sandbox** (see below) | Yes — generates code, doesn't just narrate |
 | Dashboard auto-generation (KPIs, chart picks, per-chart commentary) | **100% rule-based Python.** No LLM call anywhere in this path. | No |
-| Chat with PDF | Extracts paragraphs, does plain **keyword search** to find the most relevant ones, sends only those to the LLM with the question | Yes — answers using only the matched paragraphs |
+| Chat with PDF / DOCX / TXT | **Real RAG:** every page/paragraph is turned into a vector embedding (OpenAI `text-embedding-3-small`); the question is embedded too; the chunks whose vectors are most similar (cosine similarity) are retrieved and sent to the LLM — see below | Yes — answers using only the retrieved chunks |
 | Excel Live | LLM **tool-calling** (aka "function calling"/agentic loop) — the model picks from a fixed list of tools (read/write/analyze/chart); it never receives the whole workbook | Yes — decides which tool to call each step |
 
-**Why this distinction matters:** RAG specifically means turning documents
-into numeric "embeddings" and finding relevant chunks via vector similarity
-search (usually backed by a vector database like ChromaDB/Pinecone). We
-don't do that anywhere yet. Chat with PDF's keyword search is a much simpler
-cousin of that idea — same goal (find relevant snippets before asking the
-LLM), cruder method (text matching, not semantic vector search). Real
-vector-based RAG (ChromaDB + embeddings) is listed in the
-[Roadmap](#roadmap) as a planned Phase 2 feature, not something currently
-running.
+**How Chat with PDF's RAG actually works** (`backend/app/services/embeddings_store.py`):
+
+```mermaid
+flowchart LR
+    A[Document uploaded] --> B[Extract text per page/paragraph]
+    C[User asks a question] --> D[Embed the question<br/>OpenAI text-embedding-3-small]
+    B --> E[Embed every page/paragraph<br/>same embedding model]
+    E --> F[Cache embeddings in RAM<br/>keyed by source_id]
+    D --> G[Cosine similarity: question vector<br/>vs every chunk vector]
+    F --> G
+    G --> H[Take the top 5 most similar chunks]
+    H --> I[Send only those chunks + the question to the LLM]
+    I --> J[Answer, with page citations]
+```
+
+This means a question like *"what's the termination clause?"* can find a
+paragraph that says *"either party may end this agreement…"* — no shared
+keywords, but the embeddings recognize they mean the same thing. Plain
+keyword search (what this used to do, and what it silently falls back to if
+no `OPENAI_API_KEY` is configured or the embedding call fails) would miss
+that paragraph entirely.
+
+No separate vector database (e.g. ChromaDB/Pinecone) is used — for the
+single-document sizes this app handles, an in-memory numpy array doing
+cosine similarity **is** the same math a vector database does internally,
+without the extra moving part. Embeddings are cached per document in server
+RAM (same pattern as the pandas DataFrame cache) so asking a second question
+about the same PDF doesn't re-embed it. If the document is deleted, its
+cached embeddings are dropped immediately.
 
 **On the LLM-writes-code path — the safety measures in place:**
 - A blocklist rejects any generated code containing `import`, `exec`, `eval`,
@@ -251,8 +274,15 @@ Put a key in `backend/.env`:
 ```
 OPENAI_API_KEY=sk-...
 ```
-The query engine still computes results deterministically (safe, no arbitrary
-code execution) and adds an LLM-written narrative on top.
+Most Chat with Data questions still compute results deterministically via
+pandas and just get an LLM-written narrative on top. A few complex/open-ended
+questions (forecasting, "what if", segmentation) do have the LLM generate
+pandas code, which runs in a restricted sandbox — see
+["Do we use RAG?"](#do-we-use-rag-retrieval-augmented-generation) below for
+exactly what's sandboxed. This same key also turns on real semantic search
+(RAG) for Chat with PDF/DOCX/TXT — no separate setup needed. Optionally
+override the embedding model with `OPENAI_EMBEDDING_MODEL` (defaults to
+`text-embedding-3-small`).
 
 ## Excel Live add-in (local dev)
 
@@ -352,7 +382,7 @@ docker compose up --build
 | Export CSV / Excel / PDF | ✅ Done |
 | Query history | ✅ Done |
 | Excel Live (Office Add-in + tool-calling chat) | ✅ Done — `excel-addin/`, `backend/app/routers/excel_live.py` |
-| PDF chat (RAG + ChromaDB) | 🔜 Phase 2 — `api.js` + endpoints stubbed |
+| PDF/DOCX/TXT chat (real RAG — embeddings + cosine similarity) | ✅ Done — `backend/app/services/embeddings_store.py` |
 | SQL agent (Postgres/MySQL/Mongo connect) | 🔜 Phase 2 — `api.js` stubbed |
 | Report generator (multi-section PDF) | 🔜 Phase 2 |
 | Subscriptions (Free/Pro/Enterprise limits) | 🔜 Phase 2 — `plan` field on User |

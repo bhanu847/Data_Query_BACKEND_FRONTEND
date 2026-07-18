@@ -112,6 +112,7 @@ class TextQueryResponse(BaseModel):
     recommendations: list[str] = []
     confidence: Optional[str] = None
     confidence_reason: Optional[str] = None
+    retrieval_method: Optional[str] = None  # "semantic" (real RAG) | "keyword" (fallback, no API key)
 
 
 class DownloadQueryRequest(BaseModel):
