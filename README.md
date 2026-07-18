@@ -110,6 +110,56 @@ The numbers themselves always come from pandas doing real computation in
 Python — the LLM (when a key is configured) only writes the sentence
 describing them. It cannot invent a number that pandas didn't compute.
 
+### Do we use RAG (Retrieval-Augmented Generation)?
+
+**No — not for Chat with Data, and not for Dashboards.** Here's exactly what
+each feature does instead, so there's no ambiguity:
+
+| Feature | Technique | LLM involved? |
+|---|---|---|
+| Chat with Data (CSV/Excel) — most questions | Rule-based NLU: regex intent detection + a synonym dictionary + fuzzy string matching picks the right columns, then **real pandas operations** (`groupby`, `sum`, `mean`, chi-square test for correlation, etc.) compute the answer | Optional — only to phrase the already-computed numbers as a sentence |
+| Chat with Data — complex/open-ended questions ("what if we raised prices 10%", forecasting, segmentation, Pareto analysis) | The LLM **writes actual pandas code** for the specific question, which the backend then runs in a **restricted sandbox** (see below) | Yes — generates code, doesn't just narrate |
+| Dashboard auto-generation (KPIs, chart picks, per-chart commentary) | **100% rule-based Python.** No LLM call anywhere in this path. | No |
+| Chat with PDF | Extracts paragraphs, does plain **keyword search** to find the most relevant ones, sends only those to the LLM with the question | Yes — answers using only the matched paragraphs |
+| Excel Live | LLM **tool-calling** (aka "function calling"/agentic loop) — the model picks from a fixed list of tools (read/write/analyze/chart); it never receives the whole workbook | Yes — decides which tool to call each step |
+
+**Why this distinction matters:** RAG specifically means turning documents
+into numeric "embeddings" and finding relevant chunks via vector similarity
+search (usually backed by a vector database like ChromaDB/Pinecone). We
+don't do that anywhere yet. Chat with PDF's keyword search is a much simpler
+cousin of that idea — same goal (find relevant snippets before asking the
+LLM), cruder method (text matching, not semantic vector search). Real
+vector-based RAG (ChromaDB + embeddings) is listed in the
+[Roadmap](#roadmap) as a planned Phase 2 feature, not something currently
+running.
+
+**On the LLM-writes-code path — the safety measures in place:**
+- A blocklist rejects any generated code containing `import`, `exec`, `eval`,
+  `os.`, `subprocess`, `open(`, `socket`, `requests`, and similar — no file
+  system, network, or process access, ever.
+- The code runs with a stripped-down set of Python builtins (no `__import__`,
+  no `globals()`/`locals()`, no reflection tricks) — only safe things like
+  `len`, `sum`, `sorted`, basic types, plus `pandas`/`numpy`/`scipy`. It
+  operates on an in-memory *copy* of the DataFrame, never the original.
+- If the generated code fails, the backend retries once with the error
+  message included, then gives up cleanly rather than looping.
+
+### How Dashboard auto-generation actually works (no LLM)
+
+1. Backend inspects the DataFrame's columns: which are numeric, which are
+   categorical, which look like dates.
+2. **KPIs** are built by simple heuristics — e.g. a numeric column whose name
+   contains "revenue"/"cost"/"amount"/"price" is treated as monetary and
+   shown with a `$` and K/M formatting; every dataset gets a "Total Records"
+   KPI for free.
+3. **Chart type** is picked by rule: a categorical + numeric pair becomes a
+   pie chart if there are ≤6 categories, a bar chart otherwise; a date column
+   triggers a line chart; two numeric columns trigger a scatter plot.
+4. **Per-chart commentary** ("X dominates, contributing 42% of the total…")
+   is generated from Python string templates driven by the actual computed
+   numbers (concentration %, top-vs-bottom ratio, skew) — not written by an
+   LLM.
+
 ### "Excel Live" flow — chatting with the workbook you have open
 
 ```mermaid
