@@ -1,0 +1,29 @@
+{
+  "name": "dataquery-excel-addin",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Excel Live — DataQuery AI task pane add-in",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview --port 3000",
+    "validate": "office-addin-manifest validate manifest.xml",
+    "sideload": "office-addin-debugging start manifest.xml desktop",
+    "sideload:stop": "office-addin-debugging stop manifest.xml"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/office-js": "^1.0.400",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.3",
+    "office-addin-debugging": "^6.1.2",
+    "office-addin-dev-certs": "^2.0.10",
+    "office-addin-manifest": "^2.1.6",
+    "typescript": "^5.6.3",
+    "vite": "^5.4.10"
+  }
+}

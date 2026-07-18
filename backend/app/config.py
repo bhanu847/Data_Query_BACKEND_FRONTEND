@@ -34,9 +34,19 @@ class Settings:
     CORS_ORIGINS: list[str] = [
         o.strip() for o in os.getenv(
             "CORS_ORIGINS",
-            "http://localhost:5173,http://127.0.0.1:5173,http://localhost:5174,http://127.0.0.1:5174"
+            "http://localhost:5173,http://127.0.0.1:5173,http://localhost:5174,http://127.0.0.1:5174,"
+            # frontend now serves over HTTPS in dev (office-addin-dev-certs) so the
+            # Excel Live sign-in dialog, which requires HTTPS, can navigate to it.
+            "https://localhost:5173,https://127.0.0.1:5173,"
+            "https://localhost:3000,https://127.0.0.1:3000"
         ).split(",") if o.strip()
     ]
+
+    # Excel Live — workspace source limits by plan (an active Excel connection
+    # counts as one source, same as an uploaded file).
+    PLAN_SOURCE_LIMITS: dict = {"free": 5, "pro": 50, "enterprise": 10_000}
+    EXCEL_LIVE_MAX_ITERATIONS: int = int(os.getenv("EXCEL_LIVE_MAX_ITERATIONS", "15"))
+    EXCEL_LIVE_RATE_LIMIT_PER_MIN: int = int(os.getenv("EXCEL_LIVE_RATE_LIMIT_PER_MIN", "30"))
 
 
 @lru_cache

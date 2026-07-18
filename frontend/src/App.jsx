@@ -6,6 +6,7 @@ const Landing = lazy(() => import("./pages/Landing"));
 const Login = lazy(() => import("./pages/Login"));
 const Signup = lazy(() => import("./pages/Signup"));
 const Workspace = lazy(() => import("./pages/Workspace"));
+const ExcelLiveOnboarding = lazy(() => import("./pages/ExcelLiveOnboarding"));
 
 export default function App() {
   return (
@@ -19,6 +20,14 @@ export default function App() {
           element={
             <ProtectedRoute>
               <Workspace />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/tools/excel-live"
+          element={
+            <ProtectedRoute>
+              <ExcelLiveOnboarding />
             </ProtectedRoute>
           }
         />

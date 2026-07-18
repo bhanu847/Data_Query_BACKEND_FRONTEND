@@ -222,6 +222,47 @@ class DashboardOut(BaseModel):
         from_attributes = True
 
 
+# ---- Excel Live ----
+class ExcelLiveConnectResponse(BaseModel):
+    source_id: int
+    connected: bool
+    last_active_at: Optional[datetime] = None
+    created_at: Optional[datetime] = None
+
+
+class ExcelLiveStatusResponse(BaseModel):
+    connected: bool
+    last_active_at: Optional[datetime] = None
+
+
+class ExcelLiveChatRequest(BaseModel):
+    conversation_id: Optional[str] = None
+    message: str
+
+
+class ToolCallOut(BaseModel):
+    id: str
+    name: str
+    input: dict[str, Any]
+
+
+class ExcelLiveChatResponse(BaseModel):
+    type: str  # "tool_calls" | "message"
+    conversation_id: str
+    calls: list[ToolCallOut] = []
+    text: Optional[str] = None
+
+
+class ExcelLiveToolResult(BaseModel):
+    tool_use_id: str
+    content: Any
+
+
+class ExcelLiveToolResultsRequest(BaseModel):
+    conversation_id: str
+    results: list[ExcelLiveToolResult]
+
+
 # ---- History ----
 class HistoryItem(BaseModel):
     id: int

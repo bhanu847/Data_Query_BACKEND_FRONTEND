@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { listSources, listDashboards, getHistory, deleteSource } from "../services/api";
 import { useAuth } from "../contexts/AuthContext";
@@ -19,6 +20,7 @@ const TOOLS = [
   { key: "report",    badge: "RPT", title: "Report Generator",  desc: "AI-powered executive reports with charts",  example: '"Generate a quarterly summary"',       accent: "#818CF8", glow: "rgba(129,140,248,0.4)", cta: "Create report" },
   { key: "cleaning",  badge: "FIX", title: "Data Cleaning",     desc: "Detect and fix data quality issues",        example: '"Find missing values and outliers"',   accent: "#FB923C", glow: "rgba(251,146,60,0.4)", cta: "Upload data" },
   { key: "export",    badge: "OUT", title: "Export Center",      desc: "Export results to CSV, Excel or PDF",       example: '"Download cleaned dataset"',           accent: "#2DD4BF", glow: "rgba(45,212,191,0.4)", cta: "Open export" },
+  { key: "excel-live", badge: "XLS", title: "Excel Live",        desc: "Work on your open Excel files with AI",     example: '"Add a profit margin column to my sheet"', accent: "#22D3EE", glow: "rgba(34,211,238,0.4)", cta: "Connect Excel", route: "/tools/excel-live" },
 ];
 
 const QUICK_ACTIONS = [
@@ -40,6 +42,7 @@ const KIND_BADGE = {
    ═══════════════════════════════════════════════════════════════════ */
 
 export default function SourcesView({ onOpenTool }) {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const { confirm, modalProps } = useConfirm();
   const [stats, setStats] = useState({ sources: 0, dashboards: 0, queries: 0, sourceList: [], dashboardList: [], historyList: [] });
@@ -135,7 +138,7 @@ export default function SourcesView({ onOpenTool }) {
         <KpiCard label="Datasets" value={loading ? "—" : stats.sources} icon="◫" color="#22D3EE" />
         <KpiCard label="Dashboards" value={loading ? "—" : stats.dashboards} icon="▦" color="#818CF8" />
         <KpiCard label="Queries" value={loading ? "—" : stats.queries} icon="◈" color="#34D399" />
-        <KpiCard label="Tools Available" value="9" icon="⟐" color="#FB923C" />
+        <KpiCard label="Tools Available" value={String(TOOLS.length)} icon="⟐" color="#FB923C" />
       </div>
 
       {/* ──── Quick Actions ──── */}
@@ -277,7 +280,12 @@ export default function SourcesView({ onOpenTool }) {
         <p className="text-sm font-semibold text-ink mb-3">All Tools</p>
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
           {TOOLS.map((tool, i) => (
-            <ToolCard key={tool.key} tool={tool} index={i} onOpen={onOpenTool} />
+            <ToolCard
+              key={tool.key}
+              tool={tool}
+              index={i}
+              onOpen={(key) => (tool.route ? navigate(tool.route) : onOpenTool(key))}
+            />
           ))}
         </div>
       </div>

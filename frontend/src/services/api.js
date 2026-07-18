@@ -250,4 +250,11 @@ export async function downloadCleanedFile(source_id, fixes) {
   downloadBlob(res.data, "cleaned_data.xlsx");
 }
 
+// ---------- Excel Live ----------
+export const connectExcelLive = () =>
+  api.post("/excel-live/connect").then((r) => r.data);
+
+export const getExcelLiveStatus = () =>
+  api.get("/excel-live/status").then((r) => r.data);
+
 export default api;

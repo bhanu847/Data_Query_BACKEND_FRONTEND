@@ -41,7 +41,7 @@ def health():
     }
 
 
-from app.routers import auth, sources, query, dashboard, export, history, mongodb
+from app.routers import auth, sources, query, dashboard, export, history, mongodb, excel_live
 
 app.include_router(auth.router)
 app.include_router(sources.router)
@@ -50,3 +50,4 @@ app.include_router(dashboard.router)
 app.include_router(export.router)
 app.include_router(history.router)
 app.include_router(mongodb.router)
+app.include_router(excel_live.router)
